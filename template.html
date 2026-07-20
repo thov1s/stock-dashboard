@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美股盯盘日报</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14171c; --panel:#1b1f26; --panel-2:#21262e; --border:#2a2f37;
+    --text:#e8e6e1; --text-2:#8b93a1; --text-muted:#5c6370;
+    --gain:#5ba179; --gain-bg:rgba(91,161,121,0.14);
+    --loss:#c1594f; --loss-bg:rgba(193,89,79,0.14);
+    --watch:#c99a4e; --watch-bg:rgba(201,154,78,0.14);
+    --accent:#6f9bd1;
+    --font-sans:'IBM Plex Sans',-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);line-height:1.5;padding:0 0 4rem;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px;}
+  header{padding:2.2rem 0 1.4rem;border-bottom:1px solid var(--border);margin-bottom:1.8rem;}
+  header .eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;}
+  header h1{font-size:26px;font-weight:600;margin:0.3rem 0 0;}
+  header .date{color:var(--text-2);font-size:14px;margin-top:0.3rem;}
+
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:2rem;}
+  .metric{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}
+  .metric .label{font-size:12px;color:var(--text-2);margin-bottom:6px;}
+  .metric .value{font-family:var(--font-mono);font-size:22px;font-weight:500;}
+  .metric .sub{font-size:12px;margin-top:4px;color:var(--text-muted);}
+  .up{color:var(--gain);} .down{color:var(--loss);}
+
+  section{margin-bottom:2.4rem;}
+  h2{font-size:16px;font-weight:600;margin:0 0 0.9rem;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:right;font-weight:500;color:var(--text-2);font-size:12px;padding:6px 10px;border-bottom:1px solid var(--border);}
+  th:first-child,td:first-child{text-align:left;}
+  td{padding:7px 10px;border-bottom:1px solid var(--border);font-family:var(--font-mono);}
+  td.name{font-family:var(--font-sans);}
+  tr.total-row td{font-weight:600;background:var(--panel-2);border-top:1px solid var(--border-strong,var(--border));}
+  tr.sub-row td{color:var(--text-2);font-size:12px;}
+  tr.sub-row td.name{padding-left:22px;}
+
+  .pill{display:inline-block;font-family:var(--font-sans);font-size:11px;padding:3px 9px;border-radius:99px;font-weight:500;}
+  .pill.gain{background:var(--gain-bg);color:var(--gain);}
+  .pill.loss{background:var(--loss-bg);color:var(--loss);}
+  .pill.watch{background:var(--watch-bg);color:var(--watch);}
+  .pill.neutral{background:var(--panel-2);color:var(--text-2);}
+
+  .cat-block{margin-bottom:1.2rem;}
+  .cat-title{font-family:var(--font-mono);font-size:12px;color:var(--text-2);margin-bottom:6px;}
+
+  .search{width:100%;max-width:280px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--font-sans);font-size:13px;margin-bottom:12px;}
+  .search:focus{outline:none;border-color:var(--accent);}
+
+  .news-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin-bottom:10px;}
+  .news-item .ticker{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px;}
+  .news-item .body{font-size:13px;color:var(--text-2);white-space:pre-wrap;}
+
+  footer{color:var(--text-muted);font-size:12px;padding-top:1.5rem;border-top:1px solid var(--border);}
+
+  @media(max-width:640px){
+    table{font-size:12px;} th,td{padding:6px;}
+    .metric .value{font-size:18px;}
+  }
+
+  #lock-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;}
+  #lock-box{width:100%;max-width:280px;text-align:center;}
+  #lock-box .eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px;}
+  #lock-input{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font-mono);font-size:14px;text-align:center;}
+  #lock-input:focus{outline:none;border-color:var(--accent);}
+  #lock-error{color:var(--loss);font-size:12px;margin-top:10px;min-height:16px;}
+  #app-content{display:none;}
+</style>
+</head>
+<body>
+
+<div id="lock-screen">
+  <div id="lock-box">
+    <div class="eyebrow">Private report</div>
+    <input id="lock-input" type="password" placeholder="输入密码" autofocus>
+    <div id="lock-error"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app-content">
+  <header>
+    <div class="eyebrow">Daily watchlist report</div>
+    <h1>美股盯盘日报</h1>
+    <div class="date" id="report-date"></div>
+  </header>
+
+  <div class="metrics" id="metrics"></div>
+
+  <section>
+    <h2>持仓汇总（跨平台合并）</h2>
+    <table id="positions-table">
+      <thead><tr><th>标的</th><th>平台</th><th>股数</th><th>成本价</th><th>现价</th><th>浮动盈亏</th><th>盈亏%</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>重点价位追踪</h2>
+    <table id="watch-table">
+      <thead><tr><th>标的</th><th>现价</th><th>开仓价</th><th>加仓价</th><th>距开仓</th><th>距加仓</th><th>状态</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>新闻与技术面</h2>
+    <div id="news-list"></div>
+  </section>
+
+  <section>
+    <h2>全量自选股行情</h2>
+    <input class="search" id="watchlist-search" placeholder="搜索代码...">
+    <div id="watchlist-groups"></div>
+  </section>
+
+  <footer>以上信息仅做数据整理与展示，不构成任何投资建议。数据来源见生成日志。</footer>
+</div>
+
+<script>
+// 这个密码哈希值是用 README 里给的小脚本生成的，源码里看不到明文密码
+const PASSWORD_HASH = "__PASSWORD_HASH__";
+
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function unlockApp(){
+  document.getElementById('lock-screen').remove();
+  document.getElementById('app-content').style.display = 'block';
+  renderDashboard();
+}
+
+const lockInput = document.getElementById('lock-input');
+const lockError = document.getElementById('lock-error');
+
+if(sessionStorage.getItem('sm-unlocked') === PASSWORD_HASH){
+  unlockApp();
+} else {
+  lockInput.addEventListener('keydown', async (e)=>{
+    if(e.key !== 'Enter') return;
+    const hash = await sha256(lockInput.value);
+    if(hash === PASSWORD_HASH){
+      sessionStorage.setItem('sm-unlocked', hash);
+      unlockApp();
+    } else {
+      lockError.textContent = '密码不对，再试试';
+      lockInput.value = '';
+    }
+  });
+}
+
+const DATA = /*__DATA_JSON__*/{}/*__END_DATA_JSON__*/;
+
+function fmt(n, d=2){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function sign(n){ return n>0?'+':''; }
+function pnlClass(n){ return n>0?'up':(n<0?'down':''); }
+
+function renderDashboard(){
+document.getElementById('report-date').textContent = DATA.date || '';
+
+// metrics
+const m = DATA.portfolio || {};
+const metricsEl = document.getElementById('metrics');
+const metricDefs = [
+  {label:'总市值', value:'$'+fmt(m.total_market_value), sub:null},
+  {label:'总成本', value:'$'+fmt(m.total_cost), sub:null},
+  {label:'总浮动盈亏', value:sign(m.total_pnl)+'$'+fmt(m.total_pnl), sub:sign(m.total_pnl_pct)+fmt(m.total_pnl_pct)+'%', cls:pnlClass(m.total_pnl)},
+  {label:'持仓标的数', value:String(m.position_count||0), sub:null},
+];
+metricsEl.innerHTML = metricDefs.map(d=>`
+  <div class="metric">
+    <div class="label">${d.label}</div>
+    <div class="value ${d.cls||''}">${d.value}</div>
+    ${d.sub?`<div class="sub ${d.cls||''}">${d.sub}</div>`:''}
+  </div>
+`).join('');
+
+// positions table
+const posBody = document.querySelector('#positions-table tbody');
+let posHtml = '';
+(DATA.positions||[]).forEach(g=>{
+  posHtml += `<tr class="total-row"><td class="name">${g.ticker}</td><td>合计</td><td>${g.total_shares}</td><td>${fmt(g.avg_cost)}</td><td>${fmt(g.last_price)}</td>
+    <td class="${pnlClass(g.total_pnl)}">${sign(g.total_pnl)}${fmt(g.total_pnl)}</td><td class="${pnlClass(g.total_pnl)}">${sign(g.total_pnl_pct)}${fmt(g.total_pnl_pct)}%</td></tr>`;
+  g.rows.forEach(r=>{
+    posHtml += `<tr class="sub-row"><td class="name">${g.ticker}</td><td>${r.platform}</td><td>${r.shares}</td><td>${fmt(r.buy_price)}</td><td>${fmt(g.last_price)}</td>
+      <td class="${pnlClass(r.pnl)}">${sign(r.pnl)}${fmt(r.pnl)}</td><td class="${pnlClass(r.pnl)}">${sign(r.pnl_pct)}${fmt(r.pnl_pct)}%</td></tr>`;
+  });
+});
+posBody.innerHTML = posHtml;
+
+// watch levels table
+function watchStatus(w){
+  const cur = w.last_price;
+  if(cur===null||cur===undefined) return {label:'无行情', cls:'neutral'};
+  if(cur > w.open_price) return {label:'高于开仓价', cls:'neutral'};
+  if(w.add_price===null||w.add_price===undefined){
+    return {label:'已低于开仓价，观察区', cls:'watch'};
+  }
+  if(cur > w.add_price){
+    return {label:'已低于开仓价，未到加仓价', cls:'watch'};
+  }
+  return {label:'已低于加仓价，机会区', cls:'gain'};
+}
+const watchBody = document.querySelector('#watch-table tbody');
+watchBody.innerHTML = (DATA.watch_levels||[]).map(w=>{
+  const distOpen = w.last_price!=null ? (w.last_price - w.open_price)/w.open_price*100 : null;
+  const distAdd = (w.add_price!=null && w.last_price!=null) ? (w.last_price - w.add_price)/w.add_price*100 : null;
+  const st = watchStatus(w);
+  return `<tr>
+    <td class="name">${w.ticker}</td>
+    <td>${fmt(w.last_price)}</td>
+    <td>${fmt(w.open_price)}</td>
+    <td>${w.add_price!=null?fmt(w.add_price):'—'}</td>
+    <td class="${pnlClass(distOpen)}">${distOpen!=null?sign(distOpen)+fmt(distOpen)+'%':'—'}</td>
+    <td class="${pnlClass(distAdd)}">${distAdd!=null?sign(distAdd)+fmt(distAdd)+'%':'—'}</td>
+    <td><span class="pill ${st.cls}">${st.label}</span></td>
+  </tr>`;
+}).join('');
+
+// news
+document.getElementById('news-list').innerHTML = (DATA.news||[]).map(n=>`
+  <div class="news-item">
+    <div class="ticker">${n.ticker}</div>
+    <div class="body">${n.text}</div>
+  </div>
+`).join('') || '<div style="color:var(--text-muted);font-size:13px;">暂无新闻数据</div>';
+
+// watchlist grouped by category
+const groupsEl = document.getElementById('watchlist-groups');
+function renderWatchlist(filter){
+  const f = (filter||'').trim().toUpperCase();
+  let html = '';
+  (DATA.categories||[]).forEach(cat=>{
+    const rows = cat.items.filter(it => !f || it.ticker.toUpperCase().includes(f));
+    if(rows.length===0) return;
+    html += `<div class="cat-block"><div class="cat-title">${cat.name}</div><table><tbody>`;
+    rows.forEach(it=>{
+      html += `<tr><td class="name" style="width:80px">${it.ticker}</td>
+        <td>${fmt(it.last_price)}</td>
+        <td class="${pnlClass(it.change_pct)}">${it.change_pct!=null?sign(it.change_pct)+fmt(it.change_pct)+'%':'—'}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+  groupsEl.innerHTML = html || '<div style="color:var(--text-muted);font-size:13px;">无匹配结果</div>';
+}
+renderWatchlist('');
+document.getElementById('watchlist-search').addEventListener('input', e=>renderWatchlist(e.target.value));
+}
+</script>
+</body>
+</html>
