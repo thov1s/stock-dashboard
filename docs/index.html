@@ -4,775 +4,261 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>美股盯盘日报</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #f4f8fb;
-  --bg-warm: #fff8ec;
-  --panel: #ffffff;
-  --panel-soft: rgba(255, 255, 255, .78);
-  --panel2: #edf6f9;
-  --line: #d7e5ea;
-  --text: #17313a;
-  --muted: #5b7077;
-  --subtle: #7d9097;
-  --gain: #1677a3;
-  --loss: #c9771b;
-  --warn: #a85f00;
-  --blue: #1677a3;
-  --teal: #0f9f8f;
-  --purple: #6d5bd0;
-  --sun: #f2b84b;
-  --tiger: #eaf7ff;
-  --hsbc: #fff2df;
-  --tiger-line: #1677a3;
-  --hsbc-line: #c9771b;
-  --shadow: 0 18px 45px rgba(33, 91, 104, .10);
-  --shadow-soft: 0 8px 24px rgba(33, 91, 104, .08);
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: linear-gradient(180deg, #fbfaf6 0%, var(--bg) 40%, #f7fafc 100%);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
-  line-height: 1.48;
-}
-.lock {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(160deg, #f8fcff, #fdf9f0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-.lock-box {
-  width: min(320px, calc(100vw - 40px));
-  text-align: center;
-  background: rgba(255,255,255,.82);
-  border: 1px solid rgba(255,255,255,.9);
-  border-radius: 24px;
-  box-shadow: var(--shadow);
-  padding: 28px 24px;
-  backdrop-filter: blur(18px);
-}
-.lock-title {
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
-.lock input {
-  width: 100%;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--text);
-  border-radius: 14px;
-  padding: 12px 14px;
-  font-size: 15px;
-  text-align: center;
-  outline: none;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
-}
-.lock input:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15,159,143,.14); }
-.lock-error { min-height: 18px; margin-top: 10px; color: var(--loss); font-size: 13px; }
-.app { display: none; max-width: 1220px; margin: 0 auto; padding: 24px 18px 64px; }
-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: flex-end;
-  padding: 28px;
-  margin-bottom: 18px;
-  border: 1px solid rgba(255,255,255,.78);
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(236,249,248,.9));
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  position: relative;
-}
-.eyebrow { color: var(--teal); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 750; }
-h1 { margin: 5px 0 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.08; letter-spacing: 0; }
-.date { color: var(--muted); font-size: 14px; margin-top: 6px; }
-.source {
-  color: var(--muted);
-  font-size: 12px;
-  text-align: right;
-  background: rgba(255,255,255,.62);
-  border: 1px solid rgba(255,255,255,.9);
-  border-radius: 999px;
-  padding: 8px 12px;
-}
-.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
-.period-card {
-  background: linear-gradient(135deg, #ffffff, #f1fbfa);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  padding: 18px 20px;
-  margin-bottom: 18px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 14px;
-  align-items: center;
-  box-shadow: var(--shadow-soft);
-}
-.period-title { color: var(--muted); font-size: 12px; margin-bottom: 6px; font-weight: 700; }
-.period-value { font-size: clamp(24px, 5vw, 34px); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0; }
-.period-sub { color: var(--subtle); font-size: 12px; margin-top: 4px; }
-.range-tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-.range-tabs button {
-  color: var(--muted);
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 8px 13px;
-  cursor: pointer;
-  font-weight: 700;
-}
-.range-tabs button.active { color: #083b49; border-color: rgba(15,159,143,.42); background: #dff7f2; }
-.metric, .card, section {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  box-shadow: var(--shadow-soft);
-}
-.metric {
-  padding: 16px;
-  background: linear-gradient(180deg, #ffffff, #f7fbfd);
-}
-.label { color: var(--muted); font-size: 12px; margin-bottom: 6px; font-weight: 700; }
-.value { font-variant-numeric: tabular-nums; font-size: clamp(20px, 3.4vw, 27px); font-weight: 800; letter-spacing: 0; }
-.hint { color: var(--subtle); font-size: 12px; margin-top: 4px; }
-.up { color: var(--gain); }
-.down { color: var(--loss); }
-.neutral { color: var(--muted); }
-section { margin-bottom: 18px; overflow: hidden; }
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #ffffff, #f7fbfd);
-}
-.section-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-h2 { margin: 0; font-size: 17px; letter-spacing: 0; }
-.table-wrap { overflow-x: auto; }
-.table-wrap.hidden { display: none; }
-table { width: 100%; border-collapse: collapse; min-width: 760px; }
-th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
-th:first-child, td:first-child { text-align: left; }
-th { color: var(--muted); font-weight: 800; background: #f3f8fa; position: sticky; top: 0; }
-th.sortable {
-  cursor: pointer;
-  user-select: none;
-  color: var(--text);
-}
-th.sortable::after {
-  content: " ↕";
-  color: var(--subtle);
-  font-size: 11px;
-}
-th.sortable.asc::after { content: " ↑"; color: var(--blue); }
-th.sortable.desc::after { content: " ↓"; color: var(--blue); }
-tr:last-child td { border-bottom: 0; }
-.sub td { color: var(--muted); background: var(--panel2); }
-.sub td:first-child { border-left: 4px solid transparent; }
-.sub.broker-tiger td { background: var(--tiger); }
-.sub.broker-hsbc td { background: var(--hsbc); }
-.sub.broker-tiger td:first-child { border-left-color: var(--tiger-line); }
-.sub.broker-hsbc td:first-child { border-left-color: var(--hsbc-line); }
-.broker-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  margin-right: 6px;
-  vertical-align: 1px;
-}
-.broker-dot.tiger { background: var(--tiger-line); }
-.broker-dot.hsbc { background: var(--hsbc-line); }
-.ticker { font-weight: 700; letter-spacing: .02em; }
-.pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  white-space: nowrap;
-  background: #eef7f8;
-  color: var(--muted);
-  font-weight: 750;
-}
-.pill.good { background: #dff3fb; color: var(--gain); }
-.pill.bad { background: #fff0d8; color: var(--loss); }
-.pill.watch { background: #fff7ed; color: var(--warn); border: 1px solid #fed7aa; }
-.sector-block { padding: 10px 12px; background: rgba(255,255,255,.82); border: 1px solid var(--line); border-radius: 14px; margin-top: 8px; }
-.sector-tickers { font-family: inherit; font-weight: 750; color: var(--blue); font-size: 12px; letter-spacing: .04em; margin-bottom: 6px; }
-.intel-muted { color: var(--subtle); font-style: italic; }
-.bar {
-  height: 7px;
-  background: #dce9ee;
-  border-radius: 999px;
-  overflow: hidden;
-  min-width: 90px;
-}
-.bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--blue)); border-radius: 999px; }
-.bar > span.good { background: var(--gain); }
-.bar > span.bad { background: var(--loss); }
-.level-axis {
-  position: relative;
-  height: 46px;
-  min-width: 220px;
-  padding-top: 19px;
-}
-.level-axis::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 23px;
-  height: 2px;
-  background: var(--line);
-}
-.axis-marker {
-  position: absolute;
-  top: 8px;
-  width: 2px;
-  height: 30px;
-  background: var(--muted);
-}
-.axis-marker.current { background: var(--blue); height: 36px; top: 5px; }
-.axis-marker.open { background: var(--loss); border-left: 2px dashed var(--loss); }
-.axis-marker.add { background: var(--purple); border-left: 2px dotted var(--purple); }
-.axis-label {
-  position: absolute;
-  top: 35px;
-  transform: translateX(-50%);
-  color: var(--subtle);
-  font-size: 10px;
-  white-space: nowrap;
-}
-.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 16px 18px 18px; }
-.note, .news {
-  background: linear-gradient(180deg, #ffffff, #f5fbfc);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 13px 14px;
-}
-.news .ticker { color: var(--blue); margin-bottom: 5px; }
-.note { color: var(--muted); font-size: 13px; }
-.intel-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 16px 18px 18px;
-}
-.intel-card {
-  background: linear-gradient(180deg, #ffffff, #f5fbfc);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
-}
-.intel-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.intel-price { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.intel-line { margin-top: 7px; color: var(--muted); font-size: 13px; }
-.intel-line b { color: var(--text); }
-.intel-source {
-  display: inline-flex;
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--blue);
-  text-decoration: none;
-}
-.intel-source:hover { text-decoration: underline; }
-.intel-summary {
-  margin: 16px 18px 0;
-  background: linear-gradient(135deg, #ffffff, #ecfaf6);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 15px 16px;
-}
-.overview-title {
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 10px;
-}
-.overview-box {
-  background: rgba(255,255,255,.82);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
-}
-.overview-label { color: var(--muted); font-size: 12px; margin-bottom: 6px; font-weight: 650; }
-.overview-list {
-  margin: 0;
-  padding-left: 16px;
-  color: var(--muted);
-  font-size: 13px;
-}
-.overview-list li { margin: 5px 0; }
-.news-strip {
-  margin-top: 12px;
-  display: grid;
-  gap: 8px;
-}
-.news-item {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 8px 10px;
-  align-items: start;
-  background: rgba(255,255,255,.9);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 10px 12px;
-}
-.news-title {
-  color: var(--text);
-  font-weight: 650;
-  text-decoration: none;
-}
-.news-title:hover { text-decoration: underline; }
-.news-meta {
-  color: var(--subtle);
-  font-size: 12px;
-  margin-top: 3px;
-}
-.news-impact {
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 4px;
-}
-.pill.positive { background: #dff3fb; color: var(--gain); border: 1px solid #bfe7f2; }
-.pill.negative { background: #ffedd5; color: var(--loss); border: 1px solid #fed7aa; }
-.pill.buy { background: #dff3fb; color: var(--gain); border: 1px solid #bfe7f2; }
-.pill.hold { background: #e7f8f2; color: #0b7c70; border: 1px solid #bceee2; }
-.pill.risk { background: #ffedd5; color: var(--loss); border: 1px solid #fed7aa; }
-.pill.neutral { background: var(--panel); color: var(--muted); border: 1px solid var(--line); }
-.search {
-  width: min(260px, 100%);
-  background: #ffffff;
-  border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 9px 13px;
-  outline: none;
-}
-.search:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15,159,143,.12); }
-.cat { padding: 14px 16px; border-top: 1px solid var(--line); }
-.cat:first-child { border-top: 0; }
-.cat-title { color: var(--muted); font-size: 13px; margin-bottom: 10px; font-weight: 650; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  background: #f6fbfc;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
-footer { color: var(--subtle); font-size: 12px; padding-top: 8px; }
-.expand-btn {
-  border: 1px solid var(--line);
-  background: #ffffff;
-  color: var(--text);
-  border-radius: 999px;
-  padding: 7px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  font-weight: 750;
-}
-.expand-btn:hover { border-color: var(--teal); color: var(--blue); background: #effbf8; }
-.broker-detail-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-@media (max-width: 760px) {
-  .app { padding: 12px 10px 42px; }
-  header { display: block; padding: 22px 18px; border-radius: 24px; }
-  .source { text-align: left; margin-top: 10px; }
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric { padding: 14px; border-radius: 18px; }
-  .period-card { grid-template-columns: 1fr; }
-  .range-tabs { justify-content: flex-start; }
-  .grid { grid-template-columns: 1fr; }
-  .intel-grid { grid-template-columns: 1fr; }
-  .overview-grid { grid-template-columns: 1fr; }
-  .value { font-size: 20px; }
-  .section-head { align-items: flex-start; flex-direction: column; padding: 14px; }
-  .section-actions { justify-content: flex-start; }
-  .search { width: 100%; }
-  section { border-radius: 20px; }
-  th, td { padding: 10px 11px; }
-  .level-axis { min-width: 190px; }
-}
-@media (max-width: 430px) {
-  .metrics { grid-template-columns: 1fr; }
-  h1 { font-size: 30px; }
-  .period-value { font-size: 26px; }
-  .range-tabs button { flex: 1 1 calc(50% - 8px); }
-  .lock-box { width: calc(100vw - 28px); }
-}
+  :root{
+    --bg:#14171c; --panel:#1b1f26; --panel-2:#21262e; --border:#2a2f37;
+    --text:#e8e6e1; --text-2:#8b93a1; --text-muted:#5c6370;
+    --gain:#5ba179; --gain-bg:rgba(91,161,121,0.14);
+    --loss:#c1594f; --loss-bg:rgba(193,89,79,0.14);
+    --watch:#c99a4e; --watch-bg:rgba(201,154,78,0.14);
+    --accent:#6f9bd1;
+    --font-sans:'IBM Plex Sans',-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);line-height:1.5;padding:0 0 4rem;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px;}
+  header{padding:2.2rem 0 1.4rem;border-bottom:1px solid var(--border);margin-bottom:1.8rem;}
+  header .eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;}
+  header h1{font-size:26px;font-weight:600;margin:0.3rem 0 0;}
+  header .date{color:var(--text-2);font-size:14px;margin-top:0.3rem;}
+
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:2rem;}
+  .metric{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}
+  .metric .label{font-size:12px;color:var(--text-2);margin-bottom:6px;}
+  .metric .value{font-family:var(--font-mono);font-size:22px;font-weight:500;}
+  .metric .sub{font-size:12px;margin-top:4px;color:var(--text-muted);}
+  .up{color:var(--gain);} .down{color:var(--loss);}
+
+  section{margin-bottom:2.4rem;}
+  h2{font-size:16px;font-weight:600;margin:0 0 0.9rem;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:right;font-weight:500;color:var(--text-2);font-size:12px;padding:6px 10px;border-bottom:1px solid var(--border);}
+  th:first-child,td:first-child{text-align:left;}
+  td{padding:7px 10px;border-bottom:1px solid var(--border);font-family:var(--font-mono);}
+  td.name{font-family:var(--font-sans);}
+  tr.total-row td{font-weight:600;background:var(--panel-2);border-top:1px solid var(--border-strong,var(--border));}
+  tr.sub-row td{color:var(--text-2);font-size:12px;}
+  tr.sub-row td.name{padding-left:22px;}
+
+  .pill{display:inline-block;font-family:var(--font-sans);font-size:11px;padding:3px 9px;border-radius:99px;font-weight:500;}
+  .pill.gain{background:var(--gain-bg);color:var(--gain);}
+  .pill.loss{background:var(--loss-bg);color:var(--loss);}
+  .pill.watch{background:var(--watch-bg);color:var(--watch);}
+  .pill.neutral{background:var(--panel-2);color:var(--text-2);}
+
+  .cat-block{margin-bottom:1.2rem;}
+  .cat-title{font-family:var(--font-mono);font-size:12px;color:var(--text-2);margin-bottom:6px;}
+
+  .search{width:100%;max-width:280px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--font-sans);font-size:13px;margin-bottom:12px;}
+  .search:focus{outline:none;border-color:var(--accent);}
+
+  .news-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin-bottom:10px;}
+  .news-item .ticker{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px;}
+  .news-item .body{font-size:13px;color:var(--text-2);white-space:pre-wrap;}
+
+  footer{color:var(--text-muted);font-size:12px;padding-top:1.5rem;border-top:1px solid var(--border);}
+
+  @media(max-width:640px){
+    table{font-size:12px;} th,td{padding:6px;}
+    .metric .value{font-size:18px;}
+  }
+
+  #lock-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;}
+  #lock-box{width:100%;max-width:280px;text-align:center;}
+  #lock-box .eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px;}
+  #lock-input{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font-mono);font-size:14px;text-align:center;}
+  #lock-input:focus{outline:none;border-color:var(--accent);}
+  #lock-error{color:var(--loss);font-size:12px;margin-top:10px;min-height:16px;}
+  #app-content{display:none;}
 </style>
 </head>
 <body>
-<div class="lock" id="lock">
-  <div class="lock-box">
-    <div class="lock-title">Private report</div>
-    <input id="password" type="password" placeholder="输入密码" autofocus>
-    <div class="lock-error" id="lock-error"></div>
+
+<div id="lock-screen">
+  <div id="lock-box">
+    <div class="eyebrow">Private report</div>
+    <input id="lock-input" type="password" placeholder="输入密码" autofocus>
+    <div id="lock-error"></div>
   </div>
 </div>
-<main class="app" id="app">
+
+<div class="wrap" id="app-content">
   <header>
-    <div>
-      <div class="eyebrow">Daily watchlist dashboard</div>
-      <h1>美股盯盘日报</h1>
-      <div class="date" id="date"></div>
-    </div>
-    <div class="source" id="source"></div>
+    <div class="eyebrow">Daily watchlist report</div>
+    <h1>美股盯盘日报</h1>
+    <div class="date" id="report-date"></div>
   </header>
+
   <div class="metrics" id="metrics"></div>
-  <div class="period-card">
-    <div>
-      <div class="period-title">组合累计浮盈亏</div>
-      <div class="period-value" id="period-value"></div>
-      <div class="period-sub" id="period-sub"></div>
-    </div>
-    <div class="range-tabs" id="range-tabs"></div>
-  </div>
+
   <section>
-    <div class="section-head"><h2>持仓汇总</h2><span class="pill" id="position-count"></span></div>
-    <div class="table-wrap"><table id="positions"></table></div>
+    <h2>持仓汇总（跨平台合并）</h2>
+    <table id="positions-table">
+      <thead><tr><th>标的</th><th>平台</th><th>股数</th><th>成本价</th><th>现价</th><th>浮动盈亏</th><th>盈亏%</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </section>
+
   <section>
-    <div class="section-head"><h2>利好利空与操作观察</h2><span class="pill">持仓 + 重点买点</span></div>
-    <div class="intel-summary" id="intel-summary"></div>
-    <div class="intel-summary" id="sector-context"></div>
-    <div class="intel-grid" id="intelligence"></div>
+    <h2>重点价位追踪</h2>
+    <table id="watch-table">
+      <thead><tr><th>标的</th><th>现价</th><th>开仓价</th><th>加仓价</th><th>距开仓</th><th>距加仓</th><th>状态</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </section>
+
   <section>
-    <div class="section-head"><h2>重点买点追踪</h2><span class="pill watch">开仓 / 加仓</span></div>
-    <div class="table-wrap"><table id="levels"></table></div>
+    <h2>新闻与技术面</h2>
+    <div id="news-list"></div>
   </section>
+
   <section>
-    <div class="section-head"><h2>自选股行情</h2><input class="search" id="search" placeholder="搜索代码"></div>
-    <div id="categories"></div>
+    <h2>全量自选股行情</h2>
+    <input class="search" id="watchlist-search" placeholder="搜索代码...">
+    <div id="watchlist-groups"></div>
   </section>
-  <section>
-    <div class="section-head"><h2>明日跟进</h2><span class="pill">非交易建议</span></div>
-    <div class="grid" id="notes"></div>
-  </section>
-  <section>
-    <div class="section-head">
-      <h2>价格来源</h2>
-      <div class="section-actions">
-        <span class="pill" id="source-count"></span>
-        <button class="expand-btn" type="button" id="toggle-sources">显示明细</button>
-      </div>
-    </div>
-    <div class="table-wrap hidden" id="sources-wrap"><table id="sources"></table></div>
-  </section>
-  <footer>以上内容仅做个人数据整理，不构成投资建议。密码保护只提供基础隐私保护。</footer>
-</main>
+
+  <footer>以上信息仅做数据整理与展示，不构成任何投资建议。数据来源见生成日志。</footer>
+</div>
+
 <script>
-const REPORT = {"date": "2026-07-17", "date_label": "2026年7月17日 美股收盘", "generated_at": "2026-07-18 22:17:36", "portfolio": {"total_cost": 11998.74, "total_market_value": 11219.48, "total_pnl": -779.26, "total_pnl_pct": -6.49, "position_count": 14}, "performance": {"default_range": "total", "basis": "当前持仓浮盈亏", "periods": [{"key": "total", "label": "总时间", "pnl": -779.26, "pnl_pct": -6.49}, {"key": "month", "label": "本月", "pnl": -779.26, "pnl_pct": -6.49}, {"key": "week", "label": "本周", "pnl": -779.26, "pnl_pct": -6.49}, {"key": "year", "label": "本年", "pnl": -779.26, "pnl_pct": -6.49}]}, "positions": [{"ticker": "MSFT", "last_price": 393.82, "total_shares": 11.0, "avg_cost": 397.85, "market_value": 4332.02, "total_pnl": -44.3, "total_pnl_pct": -1.01, "rows": [{"platform": "汇丰香港", "buy_price": 397.847, "shares": 11.0, "pnl": -44.3, "pnl_pct": -1.01}], "market_weight_pct": 38.61}, {"ticker": "NVDA", "last_price": 202.81, "total_shares": 7.0, "avg_cost": 209.94, "market_value": 1419.67, "total_pnl": -49.9, "total_pnl_pct": -3.4, "rows": [{"platform": "汇丰香港", "buy_price": 209.939, "shares": 7.0, "pnl": -49.9, "pnl_pct": -3.4}], "market_weight_pct": 12.65}, {"ticker": "GOOG", "last_price": 346.12, "total_shares": 4.0, "avg_cost": 349.79, "market_value": 1384.48, "total_pnl": -14.68, "total_pnl_pct": -1.05, "rows": [{"platform": "汇丰香港", "buy_price": 349.79, "shares": 4.0, "pnl": -14.68, "pnl_pct": -1.05}], "market_weight_pct": 12.34}, {"ticker": "NBIS", "last_price": 177.71, "total_shares": 7.0, "avg_cost": 250.88, "market_value": 1243.97, "total_pnl": -512.22, "total_pnl_pct": -29.17, "rows": [{"platform": "汇丰香港", "buy_price": 250.884, "shares": 7.0, "pnl": -512.22, "pnl_pct": -29.17}], "market_weight_pct": 11.09}, {"ticker": "MU", "last_price": 848.95, "total_shares": 1.0, "avg_cost": 860.0, "market_value": 848.95, "total_pnl": -11.05, "total_pnl_pct": -1.28, "rows": [{"platform": "汇丰香港", "buy_price": 860.0, "shares": 1.0, "pnl": -11.05, "pnl_pct": -1.28}], "market_weight_pct": 7.57}, {"ticker": "TSLA", "last_price": 380.84, "total_shares": 1.0, "avg_cost": 320.81, "market_value": 380.84, "total_pnl": 60.03, "total_pnl_pct": 18.71, "rows": [{"platform": "Tiger", "buy_price": 320.81, "shares": 1.0, "pnl": 60.03, "pnl_pct": 18.71}], "market_weight_pct": 3.39}, {"ticker": "MRVL", "last_price": 188.68, "total_shares": 2.0, "avg_cost": 262.32, "market_value": 377.36, "total_pnl": -147.28, "total_pnl_pct": -28.07, "rows": [{"platform": "Tiger", "buy_price": 249.24, "shares": 1.0, "pnl": -60.56, "pnl_pct": -24.3}, {"platform": "汇丰香港", "buy_price": 275.4, "shares": 1.0, "pnl": -86.72, "pnl_pct": -31.49}], "market_weight_pct": 3.36}, {"ticker": "DRAM", "last_price": 52.72, "total_shares": 7.0, "avg_cost": 55.28, "market_value": 369.04, "total_pnl": -17.92, "total_pnl_pct": -4.63, "rows": [{"platform": "Tiger", "buy_price": 55.28, "shares": 7.0, "pnl": -17.92, "pnl_pct": -4.63}], "market_weight_pct": 3.29}, {"ticker": "GE", "last_price": 348.83, "total_shares": 1.0, "avg_cost": 288.71, "market_value": 348.83, "total_pnl": 60.12, "total_pnl_pct": 20.82, "rows": [{"platform": "Tiger", "buy_price": 288.71, "shares": 1.0, "pnl": 60.12, "pnl_pct": 20.82}], "market_weight_pct": 3.11}, {"ticker": "LRCX", "last_price": 313.3, "total_shares": 1.0, "avg_cost": 400.94, "market_value": 313.3, "total_pnl": -87.64, "total_pnl_pct": -21.86, "rows": [{"platform": "汇丰香港", "buy_price": 400.94, "shares": 1.0, "pnl": -87.64, "pnl_pct": -21.86}], "market_weight_pct": 2.79}, {"ticker": "NIO", "last_price": 4.88, "total_shares": 20.0, "avg_cost": 5.18, "market_value": 97.6, "total_pnl": -6.0, "total_pnl_pct": -5.79, "rows": [{"platform": "Tiger", "buy_price": 5.18, "shares": 20.0, "pnl": -6.0, "pnl_pct": -5.79}], "market_weight_pct": 0.87}, {"ticker": "SOFI", "last_price": 17.28, "total_shares": 4.0, "avg_cost": 16.93, "market_value": 69.12, "total_pnl": 1.4, "total_pnl_pct": 2.07, "rows": [{"platform": "Tiger", "buy_price": 16.93, "shares": 4.0, "pnl": 1.4, "pnl_pct": 2.07}], "market_weight_pct": 0.62}, {"ticker": "SMCI", "last_price": 24.18, "total_shares": 1.0, "avg_cost": 29.16, "market_value": 24.18, "total_pnl": -4.98, "total_pnl_pct": -17.08, "rows": [{"platform": "汇丰香港", "buy_price": 29.16, "shares": 1.0, "pnl": -4.98, "pnl_pct": -17.08}], "market_weight_pct": 0.22}, {"ticker": "NOK", "last_price": 10.12, "total_shares": 1.0, "avg_cost": 14.96, "market_value": 10.12, "total_pnl": -4.84, "total_pnl_pct": -32.35, "rows": [{"platform": "Tiger", "buy_price": 14.96, "shares": 1.0, "pnl": -4.84, "pnl_pct": -32.35}], "market_weight_pct": 0.09}], "intelligence": {"summary": "基于当前持仓、重点买点、近期公开新闻主题和价格位置生成；只作为个人盯盘参考，不构成投资建议。", "position_overview": {"conclusion": "组合当前由 14 个持仓组成，最大仓位是 MSFT，市值占比约 38.6%。亏损持仓市值约占 92.9%，整体风险集中在高波动科技与半导体方向。", "opportunities": ["MSFT 已接近或低于计划买点，可优先观察是否适合小额分批。", "NVDA 已接近或低于计划买点，可优先观察是否适合小额分批。", "GOOG 已接近或低于计划买点，可优先观察是否适合小额分批。", "MU 已接近或低于计划买点，可优先观察是否适合小额分批。", "GE 当前浮盈约 +20.8%，可作为组合缓冲，但不宜用盈利票对冲纪律。"], "risks": ["仓位较集中在 MSFT、NVDA、GOOG、NBIS，这些票的波动会明显影响组合。", "NOK 当前浮亏约 -32.4%，需要先看趋势修复，不建议情绪化补仓。", "半导体相关持仓占比约 29.9%，行业消息会放大组合波动。"], "actions": ["新增仓位优先给到已到计划价、且单票仓位不高的标的。", "浮亏较深的持仓先等待企稳信号，避免单纯因为下跌而加仓。", "若大盘或半导体板块继续回撤，优先保留现金，不急于一次性补满。"]}, "major_news": {"portfolio_news_summary": [{"ticker": "NIO", "title": "NIO Stock Extends Rally: China’s 'Hottest' Memory-Chip Company Just Won An EV Backer", "source": "Yahoo Finance", "date": "Wed, 15 Jul 2026 07:22:12 +0000", "impact": "NIO 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://stocktwits.com/news-articles/markets/equity/nio-china-hottest-memory-chip-company-ev-backer/cZZ2w3wR7Ae?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, {"ticker": "LRCX", "title": "Semtech and Lam Research Shares Plummet, What You Need To Know", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 22:41:22 +0000", "impact": "LRCX 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/markets/stocks/articles/semtech-lam-research-shares-plummet-224122280.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, {"ticker": "SOFI", "title": "Here’s Why SoFi Is a Prime Takeover Target for These Major Financial Players", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 14:35:53 +0000", "impact": "SOFI 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://247wallst.com/investing/2026/07/16/heres-why-sofi-is-a-prime-takeover-target-for-these-major-financial-players/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, {"ticker": "SMCI", "title": "Can Super Micro Computer's RDHx Expansion Fuel AI Data Center Demand?", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 13:38:00 +0000", "impact": "SMCI 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/technology/ai/articles/super-micro-computers-rdhx-expansion-133800077.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, {"ticker": "NVDA", "title": "I Keep Buying Nvidia Because Bears Keep Shouting This False Narrative", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 13:10:14 +0000", "impact": "NVDA 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://247wallst.com/investing/2026/07/18/i-keep-buying-nvidia-because-bears-keep-shouting-this-false-narrative/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}], "news_by_ticker": {"GE": {"ticker": "GE", "title": "GE Aerospace Lifts Guidance With Aftermarket Cycle Still a Constraint, RBC Says", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 15:14:12 +0000", "impact": "GE 有正面催化，重点看是否带动价格重新站上关键成本区。", "url": "https://finance.yahoo.com/markets/stocks/articles/ge-aerospace-lifts-guidance-aftermarket-151412149.html?.tsrc=rss", "tone": "利好", "tone_class": "positive", "importance": 2}, "MRVL": {"ticker": "MRVL", "title": "Nasdaq, Dow, S&P 500 Futures Slip As Chip Selloff Overshadows Strong Earnings Season: NFLX, SNDK, SPCX, MRVL Stocks In Focus", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 01:36:42 +0000", "impact": "MRVL 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://stocktwits.com/news-articles/markets/equity/nasdaq-dow-s-and-p-500-futures-slip-as-chip-selloff-overshadows-strong-earnings-season/cZZ7beBR7tP?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "NIO": {"ticker": "NIO", "title": "NIO Stock Extends Rally: China’s 'Hottest' Memory-Chip Company Just Won An EV Backer", "source": "Yahoo Finance", "date": "Wed, 15 Jul 2026 07:22:12 +0000", "impact": "NIO 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://stocktwits.com/news-articles/markets/equity/nio-china-hottest-memory-chip-company-ev-backer/cZZ2w3wR7Ae?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "NOK": {"ticker": "NOK", "title": "NOK Stock Faces Worst Week In 5 Years – But Retail Traders Are Not Giving Up On Nokia’s 'AI RAN Technology' Push", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 04:34:28 +0000", "impact": "NOK 股价创5年最差单周表现，虽有散户押注AI RAN叙事，但短期偏空为主。", "url": "https://stocktwits.com/news-articles/markets/equity/nok-stock-faces-worst-week-in-5-years-but-retail-traders-are-not-giving-up-on-nokia-s-ai-ran-technology-push/cZZ7dzoR7tJ?.tsrc=rss", "tone": "利空", "tone_class": "negative", "importance": 2}, "SOFI": {"ticker": "SOFI", "title": "Here’s Why SoFi Is a Prime Takeover Target for These Major Financial Players", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 14:35:53 +0000", "impact": "SOFI 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://247wallst.com/investing/2026/07/16/heres-why-sofi-is-a-prime-takeover-target-for-these-major-financial-players/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "TSLA": {"ticker": "TSLA", "title": "Dow Jones Futures: Google, Tesla, AMD Loom After AI Stock Sell-Off", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 12:43:44 +0000", "impact": "TSLA 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/m/6c8dacfc-1037-32fc-a343-353600ff0076/dow-jones-futures%3A-google%2C.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "MSFT": {"ticker": "MSFT", "title": "Microsoft Wants Sales Team to Push Its Own AI Models Instead of Rivals OpenAI, Google and Anthropic: Report (UPDATED)", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 02:31:23 +0000", "impact": "MSFT 出现负面信息，短线需要优先控制仓位和回撤。", "url": "https://finance.yahoo.com/technology/ai/articles/microsoft-wants-sales-team-push-023123802.html?.tsrc=rss", "tone": "利空", "tone_class": "negative", "importance": 2}, "NBIS": {"ticker": "NBIS", "title": "Nebius Raises $775 Million in First Secured Debt Deal", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 20:01:00 +0000", "impact": "NBIS 有正面催化，重点看是否带动价格重新站上关键成本区。", "url": "https://finance.yahoo.com/technology/ai/articles/nebius-raises-775-million-first-200100839.html?.tsrc=rss", "tone": "利好", "tone_class": "positive", "importance": 2}, "GOOG": {"ticker": "GOOG", "title": "These 7 Stocks Are Analyst Favorites For Magnificent Earnings Growth; Google Holds Top Rating", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 12:00:21 +0000", "impact": "GOOG 有正面催化，重点看是否带动价格重新站上关键成本区。", "url": "https://finance.yahoo.com/m/2b47c372-177e-3051-aa01-406a8d82b220/these-7-stocks-are-analyst.html?.tsrc=rss", "tone": "利好", "tone_class": "positive", "importance": 2}, "NVDA": {"ticker": "NVDA", "title": "I Keep Buying Nvidia Because Bears Keep Shouting This False Narrative", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 13:10:14 +0000", "impact": "NVDA 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://247wallst.com/investing/2026/07/18/i-keep-buying-nvidia-because-bears-keep-shouting-this-false-narrative/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "LRCX": {"ticker": "LRCX", "title": "Semtech and Lam Research Shares Plummet, What You Need To Know", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 22:41:22 +0000", "impact": "LRCX 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/markets/stocks/articles/semtech-lam-research-shares-plummet-224122280.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "SMCI": {"ticker": "SMCI", "title": "Can Super Micro Computer's RDHx Expansion Fuel AI Data Center Demand?", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 13:38:00 +0000", "impact": "SMCI 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/technology/ai/articles/super-micro-computers-rdhx-expansion-133800077.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "MU": {"ticker": "MU", "title": "SpaceX Stock vs. Micron Stock: Buy One and Sell the Other, According to Certain Wall Street Analysts", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 08:32:00 +0000", "impact": "MU 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://www.fool.com/investing/2026/07/18/spacex-stock-micron-stock-buy-sell-wall-street/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}}, "note": "新闻来自 Yahoo Finance RSS，仅保存标题、来源、日期、链接和一句话影响。"}, "cards": [{"ticker": "MRVL", "last_price": 188.68, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "买入观察", "advice": "已到加仓区，适合小额分批，仍要控制单票仓位。", "tone": "buy", "source_url": "https://finance.yahoo.com/quote/MRVL/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "MRVL", "title": "Nasdaq, Dow, S&P 500 Futures Slip As Chip Selloff Overshadows Strong Earnings Season: NFLX, SNDK, SPCX, MRVL Stocks In Focus", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 01:36:42 +0000", "impact": "MRVL 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://stocktwits.com/news-articles/markets/equity/nasdaq-dow-s-and-p-500-futures-slip-as-chip-selloff-overshadows-strong-earnings-season/cZZ7beBR7tP?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": -60.74}, {"ticker": "NFLX", "last_price": 68.95, "positive": "AI 产品、云业务和广告/订阅基本盘仍提供支撑。", "negative": "市场对 AI 投入回报要求更高，财报前后容易因为资本开支或指引波动。", "trend": "趋势相对稳，但更适合在接近买点时分批。", "action": "买入观察", "advice": "已到加仓区，适合小额分批，仍要控制单票仓位。", "tone": "buy", "source_url": "https://finance.yahoo.com/quote/NFLX/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": -49.83}, {"ticker": "SNDK", "last_price": 1354.82, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/SNDK/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": -31.45}, {"ticker": "TSLA", "last_price": 380.84, "positive": "Robotaxi、储能和自动驾驶叙事仍有催化。", "negative": "交付、毛利率、监管和股价情绪波动都较大。", "trend": "高波动成长股，低于计划价再考虑，仓位要轻。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/TSLA/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "TSLA", "title": "Dow Jones Futures: Google, Tesla, AMD Loom After AI Stock Sell-Off", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 12:43:44 +0000", "impact": "TSLA 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/m/6c8dacfc-1037-32fc-a343-353600ff0076/dow-jones-futures%3A-google%2C.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": -28.53}, {"ticker": "MU", "last_price": 848.95, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/MU/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "MU", "title": "SpaceX Stock vs. Micron Stock: Buy One and Sell the Other, According to Certain Wall Street Analysts", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 08:32:00 +0000", "impact": "MU 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://www.fool.com/investing/2026/07/18/spacex-stock-micron-stock-buy-sell-wall-street/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": -24.87}, {"ticker": "MSFT", "last_price": 393.82, "positive": "AI 产品、云业务和广告/订阅基本盘仍提供支撑。", "negative": "市场对 AI 投入回报要求更高，财报前后容易因为资本开支或指引波动。", "trend": "趋势相对稳，但更适合在接近买点时分批。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/MSFT/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "MSFT", "title": "Microsoft Wants Sales Team to Push Its Own AI Models Instead of Rivals OpenAI, Google and Anthropic: Report (UPDATED)", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 02:31:23 +0000", "impact": "MSFT 出现负面信息，短线需要优先控制仓位和回撤。", "url": "https://finance.yahoo.com/technology/ai/articles/microsoft-wants-sales-team-push-023123802.html?.tsrc=rss", "tone": "利空", "tone_class": "negative", "importance": 2}, "priority": -24.38}, {"ticker": "SOXX", "last_price": 521.81, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://www.reuters.com/technology/", "source_label": "行业新闻", "major_news": null, "priority": -23.01}, {"ticker": "GOOG", "last_price": 346.12, "positive": "AI 产品、云业务和广告/订阅基本盘仍提供支撑。", "negative": "市场对 AI 投入回报要求更高，财报前后容易因为资本开支或指引波动。", "trend": "趋势相对稳，但更适合在接近买点时分批。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/GOOG/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "GOOG", "title": "These 7 Stocks Are Analyst Favorites For Magnificent Earnings Growth; Google Holds Top Rating", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 12:00:21 +0000", "impact": "GOOG 有正面催化，重点看是否带动价格重新站上关键成本区。", "url": "https://finance.yahoo.com/m/2b47c372-177e-3051-aa01-406a8d82b220/these-7-stocks-are-analyst.html?.tsrc=rss", "tone": "利好", "tone_class": "positive", "importance": 2}, "priority": -22.16}, {"ticker": "TSM", "last_price": 398.37, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/TSM/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": -21.64}, {"ticker": "SMH", "last_price": 556.53, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://www.reuters.com/technology/", "source_label": "行业新闻", "major_news": null, "priority": -21.5}, {"ticker": "AMZN", "last_price": 247.23, "positive": "AI 产品、云业务和广告/订阅基本盘仍提供支撑。", "negative": "市场对 AI 投入回报要求更高，财报前后容易因为资本开支或指引波动。", "trend": "趋势相对稳，但更适合在接近买点时分批。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/AMZN/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": -19.91}, {"ticker": "NVDA", "last_price": 202.81, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/NVDA/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "NVDA", "title": "I Keep Buying Nvidia Because Bears Keep Shouting This False Narrative", "source": "Yahoo Finance", "date": "Sat, 18 Jul 2026 13:10:14 +0000", "impact": "NVDA 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://247wallst.com/investing/2026/07/18/i-keep-buying-nvidia-because-bears-keep-shouting-this-false-narrative/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": -17.21}, {"ticker": "AVGO", "last_price": 370.83, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/AVGO/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": -16.99}, {"ticker": "META", "last_price": 646.01, "positive": "AI 产品、云业务和广告/订阅基本盘仍提供支撑。", "negative": "市场对 AI 投入回报要求更高，财报前后容易因为资本开支或指引波动。", "trend": "趋势相对稳，但更适合在接近买点时分批。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/META/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": -16.97}, {"ticker": "SOFI", "last_price": 17.28, "positive": "会员增长、金融科技产品扩张和 AI 工具是利好。", "negative": "利率环境、信贷质量和估值修复节奏仍是风险。", "trend": "适合小仓跟踪，靠近加仓价再提高优先级。", "action": "试仓观察", "advice": "接近计划买点，可分批，不建议一次打满。", "tone": "watch", "source_url": "https://finance.yahoo.com/quote/SOFI/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "SOFI", "title": "Here’s Why SoFi Is a Prime Takeover Target for These Major Financial Players", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 14:35:53 +0000", "impact": "SOFI 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://247wallst.com/investing/2026/07/16/heres-why-sofi-is-a-prime-takeover-target-for-these-major-financial-players/?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": -15.68}, {"ticker": "NOK", "last_price": 10.12, "positive": "网络设备和专利业务提供一定防守属性。", "negative": "通信设备需求恢复慢，弹性弱。", "trend": "低优先级持有观察。", "action": "暂不补仓", "advice": "当前浮亏较大，优先等趋势企稳，避免越跌越买。", "tone": "risk", "source_url": "https://finance.yahoo.com/quote/NOK/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "NOK", "title": "NOK Stock Faces Worst Week In 5 Years – But Retail Traders Are Not Giving Up On Nokia’s 'AI RAN Technology' Push", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 04:34:28 +0000", "impact": "NOK 股价创5年最差单周表现，虽有散户押注AI RAN叙事，但短期偏空为主。", "url": "https://stocktwits.com/news-articles/markets/equity/nok-stock-faces-worst-week-in-5-years-but-retail-traders-are-not-giving-up-on-nokia-s-ai-ran-technology-push/cZZ7dzoR7tJ?.tsrc=rss", "tone": "利空", "tone_class": "negative", "importance": 2}, "priority": 4.0}, {"ticker": "NBIS", "last_price": 177.71, "positive": "AI 云基础设施题材有想象空间。", "negative": "公司波动大，业绩兑现和估值不确定性高。", "trend": "已有较大浮亏时先控仓，等趋势修复再行动。", "action": "暂不补仓", "advice": "当前浮亏较大，优先等趋势企稳，避免越跌越买。", "tone": "risk", "source_url": "https://finance.yahoo.com/quote/NBIS/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "NBIS", "title": "Nebius Raises $775 Million in First Secured Debt Deal", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 20:01:00 +0000", "impact": "NBIS 有正面催化，重点看是否带动价格重新站上关键成本区。", "url": "https://finance.yahoo.com/technology/ai/articles/nebius-raises-775-million-first-200100839.html?.tsrc=rss", "tone": "利好", "tone_class": "positive", "importance": 2}, "priority": 4.17}, {"ticker": "ORCL", "last_price": 126.41, "positive": "AI 产品、云业务和广告/订阅基本盘仍提供支撑。", "negative": "市场对 AI 投入回报要求更高，财报前后容易因为资本开支或指引波动。", "trend": "趋势相对稳，但更适合在接近买点时分批。", "action": "持有观察", "advice": "暂未到明确买点，继续跟踪消息和价格。", "tone": "hold", "source_url": "https://finance.yahoo.com/quote/ORCL/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": 5.34}, {"ticker": "LRCX", "last_price": 313.3, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "暂不补仓", "advice": "当前浮亏较大，优先等趋势企稳，避免越跌越买。", "tone": "risk", "source_url": "https://finance.yahoo.com/quote/LRCX/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "LRCX", "title": "Semtech and Lam Research Shares Plummet, What You Need To Know", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 22:41:22 +0000", "impact": "LRCX 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/markets/stocks/articles/semtech-lam-research-shares-plummet-224122280.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": 5.63}, {"ticker": "AMD", "last_price": 495.76, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "持有观察", "advice": "暂未到明确买点，继续跟踪消息和价格。", "tone": "hold", "source_url": "https://finance.yahoo.com/quote/AMD/news", "source_label": "Yahoo Finance 新闻", "major_news": null, "priority": 10.17}, {"ticker": "DRAM", "last_price": 52.72, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "持有观察", "advice": "暂未到明确买点，继续跟踪消息和价格。", "tone": "hold", "source_url": "https://www.reuters.com/technology/", "source_label": "行业新闻", "major_news": null, "priority": 11.24}, {"ticker": "GE", "last_price": 348.83, "positive": "航空航天业务景气度和订单韧性较好。", "negative": "工业股受经济周期和供应链影响。", "trend": "偏稳健持有，追高性价比一般。", "action": "继续持有", "advice": "已有盈利垫，可持有并设置回撤提醒。", "tone": "hold", "source_url": "https://finance.yahoo.com/quote/GE/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "GE", "title": "GE Aerospace Lifts Guidance With Aftermarket Cycle Still a Constraint, RBC Says", "source": "Yahoo Finance", "date": "Fri, 17 Jul 2026 15:14:12 +0000", "impact": "GE 有正面催化，重点看是否带动价格重新站上关键成本区。", "url": "https://finance.yahoo.com/markets/stocks/articles/ge-aerospace-lifts-guidance-aftermarket-151412149.html?.tsrc=rss", "tone": "利好", "tone_class": "positive", "importance": 2}, "priority": 15.84}, {"ticker": "SMCI", "last_price": 24.18, "positive": "AI 算力、HBM/内存、先进制程和数据中心投资仍是主要利好。", "negative": "半导体板块波动加大，估值和资本开支预期一旦下修，容易放大回撤。", "trend": "偏强高波动，适合按买点分批，不适合一次性追高。", "action": "持有观察", "advice": "暂未到明确买点，继续跟踪消息和价格。", "tone": "hold", "source_url": "https://finance.yahoo.com/quote/SMCI/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "SMCI", "title": "Can Super Micro Computer's RDHx Expansion Fuel AI Data Center Demand?", "source": "Yahoo Finance", "date": "Thu, 16 Jul 2026 13:38:00 +0000", "impact": "SMCI 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://finance.yahoo.com/technology/ai/articles/super-micro-computers-rdhx-expansion-133800077.html?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": 16.58}, {"ticker": "NIO", "last_price": 4.88, "positive": "新品和交付改善可能带来弹性。", "negative": "现金流、竞争和融资压力仍是核心风险。", "trend": "只适合小仓观察，不宜盲目补仓。", "action": "持有观察", "advice": "暂未到明确买点，继续跟踪消息和价格。", "tone": "hold", "source_url": "https://finance.yahoo.com/quote/NIO/news", "source_label": "Yahoo Finance 新闻", "major_news": {"ticker": "NIO", "title": "NIO Stock Extends Rally: China’s 'Hottest' Memory-Chip Company Just Won An EV Backer", "source": "Yahoo Finance", "date": "Wed, 15 Jul 2026 07:22:12 +0000", "impact": "NIO 有新消息更新，暂按中性处理，重点看市场反应。", "url": "https://stocktwits.com/news-articles/markets/equity/nio-china-hottest-memory-chip-company-ev-backer/cZZ2w3wR7Ae?.tsrc=rss", "tone": "中性", "tone_class": "neutral", "importance": 2}, "priority": 18.84}]}, "watch_levels": [{"ticker": "NFLX", "last_price": 68.95, "open_price": 86.0, "add_price": 80.0, "distance_open_pct": -19.83, "distance_add_pct": -13.81, "status": "已低于加仓价", "status_class": "good", "note": ""}, {"ticker": "MRVL", "last_price": 188.68, "open_price": 252.0, "add_price": 220.0, "distance_open_pct": -25.13, "distance_add_pct": -14.24, "status": "已低于加仓价", "status_class": "good", "note": ""}, {"ticker": "SMH", "last_price": 556.53, "open_price": 565.0, "add_price": null, "distance_open_pct": -1.5, "distance_add_pct": null, "status": "已低于开仓价", "status_class": "watch", "note": "图片记录：SMH ETF 565 开仓，定投 DCA"}, {"ticker": "TSM", "last_price": 398.37, "open_price": 405.0, "add_price": 385.0, "distance_open_pct": -1.64, "distance_add_pct": 3.47, "status": "已低于开仓价", "status_class": "watch", "note": "图片记录：台积电 405 开仓，385 加仓，财报这周"}, {"ticker": "GOOG", "last_price": 346.12, "open_price": 353.0, "add_price": 330.0, "distance_open_pct": -1.95, "distance_add_pct": 4.88, "status": "已低于开仓价", "status_class": "watch", "note": ""}, {"ticker": "SOXX", "last_price": 521.81, "open_price": 538.0, "add_price": null, "distance_open_pct": -3.01, "distance_add_pct": null, "status": "已低于开仓价", "status_class": "watch", "note": "图片记录：SOXX ETF 538 开仓，定投 DCA"}, {"ticker": "MSFT", "last_price": 393.82, "open_price": 411.0, "add_price": 390.0, "distance_open_pct": -4.18, "distance_add_pct": 0.98, "status": "已低于开仓价", "status_class": "watch", "note": ""}, {"ticker": "MU", "last_price": 848.95, "open_price": 890.0, "add_price": 820.0, "distance_open_pct": -4.61, "distance_add_pct": 3.53, "status": "已低于开仓价", "status_class": "watch", "note": "图片记录：美光 890 开仓，820 加仓，长期布局"}, {"ticker": "TSLA", "last_price": 380.84, "open_price": 400.0, "add_price": null, "distance_open_pct": -4.79, "distance_add_pct": null, "status": "已低于开仓价", "status_class": "watch", "note": ""}, {"ticker": "SNDK", "last_price": 1354.82, "open_price": 1530.0, "add_price": 1280.0, "distance_open_pct": -11.45, "distance_add_pct": 5.85, "status": "已低于开仓价", "status_class": "watch", "note": "图片记录：闪迪 1530 开仓，1280 加仓"}, {"ticker": "AMZN", "last_price": 247.23, "open_price": 247.0, "add_price": 233.0, "distance_open_pct": 0.09, "distance_add_pct": 6.11, "status": "接近开仓价", "status_class": "watch", "note": ""}, {"ticker": "AVGO", "last_price": 370.83, "open_price": 360.0, "add_price": 322.0, "distance_open_pct": 3.01, "distance_add_pct": 15.16, "status": "接近开仓价", "status_class": "watch", "note": "图片记录：博通 360 开仓，322 加仓"}, {"ticker": "META", "last_price": 646.01, "open_price": 627.0, "add_price": 598.0, "distance_open_pct": 3.03, "distance_add_pct": 8.03, "status": "接近开仓价", "status_class": "watch", "note": ""}, {"ticker": "NVDA", "last_price": 202.81, "open_price": 196.0, "add_price": 188.0, "distance_open_pct": 3.47, "distance_add_pct": 7.88, "status": "接近开仓价", "status_class": "watch", "note": "图片记录：英伟达 196 开仓，188 加仓"}, {"ticker": "SOFI", "last_price": 17.28, "open_price": 16.5, "add_price": 15.0, "distance_open_pct": 4.73, "distance_add_pct": 15.2, "status": "接近开仓价", "status_class": "watch", "note": ""}, {"ticker": "ORCL", "last_price": 126.41, "open_price": 120.0, "add_price": null, "distance_open_pct": 5.34, "distance_add_pct": null, "status": "高于开仓价", "status_class": "neutral", "note": "图片记录：甲骨文 120 加仓"}, {"ticker": "AMD", "last_price": 495.76, "open_price": 450.0, "add_price": 393.0, "distance_open_pct": 10.17, "distance_add_pct": 26.15, "status": "高于开仓价", "status_class": "neutral", "note": "图片记录：AMD 估值高，不建议买入；但跟踪 450/393"}, {"ticker": "DRAM", "last_price": 52.72, "open_price": 47.0, "add_price": null, "distance_open_pct": 12.17, "distance_add_pct": null, "status": "高于开仓价", "status_class": "neutral", "note": "图片记录：DRAM ETF 风险较大，控制仓位，47 开仓，定投 DCA"}], "categories": [{"name": "AI / 半导体 / 硬件", "items": [{"ticker": "NVDA", "last_price": 202.81, "change_pct": -2.21}, {"ticker": "AMD", "last_price": 495.76, "change_pct": -1.03}, {"ticker": "MRVL", "last_price": 188.68, "change_pct": 0.2}, {"ticker": "LRCX", "last_price": 313.3, "change_pct": -2.39}, {"ticker": "MU", "last_price": 848.95, "change_pct": -0.5}, {"ticker": "SMCI", "last_price": 24.18, "change_pct": -2.03}, {"ticker": "TSM", "last_price": 398.37, "change_pct": -2.77}, {"ticker": "INTC", "last_price": 95.04, "change_pct": -2.0}, {"ticker": "DELL", "last_price": 396.34, "change_pct": 1.27}, {"ticker": "WOLF", "last_price": 29.89, "change_pct": -4.14}, {"ticker": "AAOI", "last_price": 102.41, "change_pct": 2.16}, {"ticker": "LITE", "last_price": 732.82, "change_pct": 3.77}, {"ticker": "SNDK", "last_price": 1354.82, "change_pct": -3.99}, {"ticker": "DRAM", "last_price": 52.72, "change_pct": 0.73}, {"ticker": "AVGO", "last_price": 370.83, "change_pct": -0.97}]}, {"name": "大型科技平台", "items": [{"ticker": "MSFT", "last_price": 393.82, "change_pct": -1.82}, {"ticker": "GOOG", "last_price": 346.12, "change_pct": -2.17}, {"ticker": "META", "last_price": 646.01, "change_pct": -2.79}, {"ticker": "AAPL", "last_price": 333.74, "change_pct": 0.14}, {"ticker": "AMZN", "last_price": 247.23, "change_pct": -1.06}, {"ticker": "ORCL", "last_price": 126.41, "change_pct": 1.77}, {"ticker": "NFLX", "last_price": 68.95, "change_pct": -7.26}]}, {"name": "软件 / 云 / 数据", "items": [{"ticker": "SNOW", "last_price": 268.9, "change_pct": -0.41}, {"ticker": "CRM", "last_price": 170.77, "change_pct": -1.11}, {"ticker": "PLTR", "last_price": 132.38, "change_pct": -1.53}, {"ticker": "WIX", "last_price": 51.45, "change_pct": -2.54}, {"ticker": "IGV", "last_price": 92.8, "change_pct": -0.96}]}, {"name": "金融科技 / 加密相关", "items": [{"ticker": "SOFI", "last_price": 17.28, "change_pct": -0.23}, {"ticker": "MSTR", "last_price": 94.85, "change_pct": 0.87}, {"ticker": "IREN", "last_price": 33.62, "change_pct": -3.47}]}, {"name": "太空 / 卫星 / 新兴科技", "items": [{"ticker": "RKLB", "last_price": 67.62, "change_pct": 0.4}, {"ticker": "ASTS", "last_price": 57.8, "change_pct": 5.07}, {"ticker": "IONQ", "last_price": 34.78, "change_pct": -0.91}, {"ticker": "SPCX", "last_price": 123.99, "change_pct": -5.43}]}, {"name": "电动车 / 汽车", "items": [{"ticker": "TSLA", "last_price": 380.84, "change_pct": -2.61}, {"ticker": "NIO", "last_price": 4.88, "change_pct": -2.2}, {"ticker": "LI", "last_price": 12.39, "change_pct": -3.65}, {"ticker": "XPEV", "last_price": 13.53, "change_pct": -3.63}, {"ticker": "GM", "last_price": 76.07, "change_pct": -2.12}]}, {"name": "ETF / 指数配置", "items": [{"ticker": "QQQ", "last_price": 695.33, "change_pct": -1.5}, {"ticker": "VOO", "last_price": null, "change_pct": null}, {"ticker": "IGV", "last_price": 92.8, "change_pct": -0.96}, {"ticker": "DRAM", "last_price": 52.72, "change_pct": 0.73}, {"ticker": "NEBX", "last_price": 21.94, "change_pct": 7.44}, {"ticker": "SOXX", "last_price": 521.81, "change_pct": -1.64}, {"ticker": "SMH", "last_price": 556.53, "change_pct": -2.18}]}], "notes": ["MSFT 是否继续低于 390。", "NVDA 是否守住 208 附近，或继续向 196 靠近。", "GOOG 是否跌破 353。", "MRVL 是否继续低于 252，并观察是否向 220 靠近。", "AMZN 是否维持在 247 以下。", "TSLA 是否继续围绕 400 上下波动。", "NBIS 是否改善，当前是汇丰持仓中主要浮亏来源之一。"], "sources": [{"ticker": "AAOI", "close": 102.41, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "AAPL", "close": 333.74, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "AMD", "close": 495.76, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "AMZN", "close": 247.23, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "ASTS", "close": 57.8, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "AVGO", "close": 370.83, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "BABA", "close": 114.97, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "CRM", "close": 170.77, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "CSCO", "close": 111.94, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "DELL", "close": 396.34, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "DRAM", "close": 52.72, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "GE", "close": 348.83, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "GM", "close": 76.07, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "GOOG", "close": 346.12, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "IGV", "close": 92.8, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "INTC", "close": 95.04, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "IONQ", "close": 34.78, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "IREN", "close": 33.62, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "LI", "close": 12.39, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "LITE", "close": 732.82, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "LRCX", "close": 313.3, "source": "Nasdaq", "note": "2026-07-17 收盘价"}, {"ticker": "MCD", "close": 267.71, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "META", "close": 646.01, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "MRVL", "close": 188.68, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "MSFT", "close": 393.82, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "MSTR", "close": 94.85, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "MU", "close": 848.95, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "NBIS", "close": 177.71, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "NEBX", "close": 21.94, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "NFLX", "close": 68.95, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "NIO", "close": 4.88, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "NOK", "close": 10.12, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "NVDA", "close": 202.81, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "ORCL", "close": 126.41, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "PDD", "close": 84.14, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "PLTR", "close": 132.38, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "QQQ", "close": 695.33, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "RKLB", "close": 67.62, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "SMCI", "close": 24.18, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "SMH", "close": 556.53, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "SNDK", "close": 1354.82, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "SNOW", "close": 268.9, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "SOFI", "close": 17.28, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "SOXX", "close": 521.81, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "SPCX", "close": 123.99, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "TSLA", "close": 380.84, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "TSM", "close": 398.37, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "VOO", "close": null, "source": "未取到", "note": "没有对应日期"}, {"ticker": "WIX", "close": 51.45, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "WOLF", "close": 29.89, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}, {"ticker": "XPEV", "close": 13.53, "source": "Yahoo Finance", "note": "2026-07-17 收盘价"}]};
-const PASSWORD_HASH = "d9ae582cd636222dc0fa16b21aa28174fa351419ed81cf311a637cd7830f3788";
-async function sha256(text) {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(bytes)).map(b => b.toString(16).padStart(2, "0")).join("");
+// 这个密码哈希值是用 README 里给的小脚本生成的，源码里看不到明文密码
+const PASSWORD_HASH = "";
+
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-function fmt(n, d = 2) {
-  if (n === null || n === undefined || Number.isNaN(Number(n))) return "—";
-  return Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function unlockApp(){
+  document.getElementById('lock-screen').remove();
+  document.getElementById('app-content').style.display = 'block';
+  renderDashboard();
 }
-function sign(n) { return Number(n) > 0 ? "+" : ""; }
-function cls(n) { return Number(n) > 0 ? "up" : Number(n) < 0 ? "down" : "neutral"; }
-function money(n) { return n === null || n === undefined ? "—" : `${sign(n)}$${fmt(n)}`; }
-function pct(n) { return n === null || n === undefined ? "—" : `${sign(n)}${fmt(n)}%`; }
-function pctWidth(n) {
-  if (n === null || n === undefined) return 0;
-  return Math.max(4, Math.min(100, Math.abs(Number(n))));
-}
-function brokerClass(name) {
-  return String(name).includes("汇丰") ? "broker-hsbc" : "broker-tiger";
-}
-function brokerDot(name) {
-  const kind = String(name).includes("汇丰") ? "hsbc" : "tiger";
-  return `<span class="broker-dot ${kind}"></span>${name}`;
-}
-function clampPct(n) {
-  return Math.max(2, Math.min(98, Number(n)));
-}
-function levelAxis(w) {
-  if (w.last_price === null || w.last_price === undefined) return "—";
-  const points = [w.last_price, w.open_price];
-  if (w.add_price !== null && w.add_price !== undefined) points.push(w.add_price);
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const padding = Math.max((max - min) * 0.18, max * 0.015, 0.5);
-  const low = min - padding;
-  const high = max + padding;
-  const pos = value => clampPct(((value - low) / (high - low)) * 100);
-  const markers = [
-    `<span class="axis-marker current" style="left:${pos(w.last_price)}%"></span><span class="axis-label" style="left:${pos(w.last_price)}%">现价</span>`,
-    `<span class="axis-marker open" style="left:${pos(w.open_price)}%"></span><span class="axis-label" style="left:${pos(w.open_price)}%">开仓</span>`
-  ];
-  if (w.add_price !== null && w.add_price !== undefined) {
-    markers.push(`<span class="axis-marker add" style="left:${pos(w.add_price)}%"></span><span class="axis-label" style="left:${pos(w.add_price)}%">加仓</span>`);
-  }
-  return `<div class="level-axis">${markers.join("")}</div>`;
-}
-function unlock() {
-  document.getElementById("lock").remove();
-  document.getElementById("app").style.display = "block";
-  render();
-}
-if (sessionStorage.getItem("stock-monitor-unlocked") === PASSWORD_HASH) {
-  unlock();
+
+const lockInput = document.getElementById('lock-input');
+const lockError = document.getElementById('lock-error');
+
+if(sessionStorage.getItem('sm-unlocked') === PASSWORD_HASH){
+  unlockApp();
 } else {
-  document.getElementById("password").addEventListener("keydown", async (event) => {
-    if (event.key !== "Enter") return;
-    const hash = await sha256(event.target.value);
-    if (hash === PASSWORD_HASH) {
-      sessionStorage.setItem("stock-monitor-unlocked", hash);
-      unlock();
+  lockInput.addEventListener('keydown', async (e)=>{
+    if(e.key !== 'Enter') return;
+    const hash = await sha256(lockInput.value);
+    if(hash === PASSWORD_HASH){
+      sessionStorage.setItem('sm-unlocked', hash);
+      unlockApp();
     } else {
-      document.getElementById("lock-error").textContent = "密码不对";
-      event.target.value = "";
+      lockError.textContent = '密码不对，再试试';
+      lockInput.value = '';
     }
   });
 }
-function table(headers, rows) {
-  return `<thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody>`;
+
+const DATA = /*__DATA_JSON__*/{}/*__END_DATA_JSON__*/;
+
+function fmt(n, d=2){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 }
-let positionSort = { key: "market_weight_pct", direction: "desc" };
-const expandedPositions = new Set();
-let sourcesVisible = false;
-const positionSortLabels = {
-  total_shares: "股数",
-  avg_cost: "平均成本",
-  last_price: "现价",
-  market_value: "市值",
-  total_pnl: "总盈亏",
-  total_pnl_pct: "盈亏%",
-  market_weight_pct: "市值占比"
-};
-function numValue(value) {
-  return value === null || value === undefined || Number.isNaN(Number(value)) ? null : Number(value);
-}
-function sortPositions() {
-  return [...REPORT.positions].sort((a, b) => {
-    const av = numValue(a[positionSort.key]);
-    const bv = numValue(b[positionSort.key]);
-    if (av === null && bv === null) return a.ticker.localeCompare(b.ticker);
-    if (av === null) return 1;
-    if (bv === null) return -1;
-    const diff = av - bv;
-    if (diff === 0) return a.ticker.localeCompare(b.ticker);
-    return positionSort.direction === "asc" ? diff : -diff;
+function sign(n){ return n>0?'+':''; }
+function pnlClass(n){ return n>0?'up':(n<0?'down':''); }
+
+function renderDashboard(){
+document.getElementById('report-date').textContent = DATA.date || '';
+
+// metrics
+const m = DATA.portfolio || {};
+const metricsEl = document.getElementById('metrics');
+const metricDefs = [
+  {label:'总市值', value:'$'+fmt(m.total_market_value), sub:null},
+  {label:'总成本', value:'$'+fmt(m.total_cost), sub:null},
+  {label:'总浮动盈亏', value:sign(m.total_pnl)+'$'+fmt(m.total_pnl), sub:sign(m.total_pnl_pct)+fmt(m.total_pnl_pct)+'%', cls:pnlClass(m.total_pnl)},
+  {label:'持仓标的数', value:String(m.position_count||0), sub:null},
+];
+metricsEl.innerHTML = metricDefs.map(d=>`
+  <div class="metric">
+    <div class="label">${d.label}</div>
+    <div class="value ${d.cls||''}">${d.value}</div>
+    ${d.sub?`<div class="sub ${d.cls||''}">${d.sub}</div>`:''}
+  </div>
+`).join('');
+
+// positions table
+const posBody = document.querySelector('#positions-table tbody');
+let posHtml = '';
+(DATA.positions||[]).forEach(g=>{
+  posHtml += `<tr class="total-row"><td class="name">${g.ticker}</td><td>合计</td><td>${g.total_shares}</td><td>${fmt(g.avg_cost)}</td><td>${fmt(g.last_price)}</td>
+    <td class="${pnlClass(g.total_pnl)}">${sign(g.total_pnl)}${fmt(g.total_pnl)}</td><td class="${pnlClass(g.total_pnl)}">${sign(g.total_pnl_pct)}${fmt(g.total_pnl_pct)}%</td></tr>`;
+  g.rows.forEach(r=>{
+    posHtml += `<tr class="sub-row"><td class="name">${g.ticker}</td><td>${r.platform}</td><td>${r.shares}</td><td>${fmt(r.buy_price)}</td><td>${fmt(g.last_price)}</td>
+      <td class="${pnlClass(r.pnl)}">${sign(r.pnl)}${fmt(r.pnl)}</td><td class="${pnlClass(r.pnl)}">${sign(r.pnl_pct)}${fmt(r.pnl_pct)}%</td></tr>`;
   });
+});
+posBody.innerHTML = posHtml;
+
+// watch levels table
+function watchStatus(w){
+  const cur = w.last_price;
+  if(cur===null||cur===undefined) return {label:'无行情', cls:'neutral'};
+  if(cur > w.open_price) return {label:'高于开仓价', cls:'neutral'};
+  if(w.add_price===null||w.add_price===undefined){
+    return {label:'已低于开仓价，观察区', cls:'watch'};
+  }
+  if(cur > w.add_price){
+    return {label:'已低于开仓价，未到加仓价', cls:'watch'};
+  }
+  return {label:'已低于加仓价，机会区', cls:'gain'};
 }
-function sortablePositionHead(key) {
-  const active = positionSort.key === key ? positionSort.direction : "";
-  return `<th class="sortable ${active}" data-position-sort="${key}" title="点击切换排序">${positionSortLabels[key]}</th>`;
-}
-function renderPositionTable() {
-  const positionRows = [];
-  sortPositions().forEach(item => {
-    const canExpand = item.rows.length > 1;
-    const isExpanded = expandedPositions.has(item.ticker);
-    const action = canExpand ? `<button class="expand-btn" type="button" data-expand="${item.ticker}">${isExpanded ? "收起" : "展开"}</button>` : "";
-    positionRows.push(`<tr><td><span class="ticker">${item.ticker}</span></td><td>${fmt(item.total_shares, 0)}</td><td>${fmt(item.avg_cost)}</td><td>${fmt(item.last_price)}</td><td>$${fmt(item.market_value)}</td><td class="${cls(item.total_pnl)}">${money(item.total_pnl)}</td><td class="${cls(item.total_pnl_pct)}">${pct(item.total_pnl_pct)}</td><td><div class="bar"><span style="width:${pctWidth(item.market_weight_pct)}%"></span></div></td><td>${action}</td></tr>`);
-    if (isExpanded) {
-      item.rows.forEach(row => {
-        const rowMarketValue = item.last_price === null || item.last_price === undefined ? null : row.shares * item.last_price;
-        positionRows.push(`<tr class="sub ${brokerClass(row.platform)}"><td><span class="broker-detail-label">${brokerDot(row.platform)}</span></td><td>${fmt(row.shares, 0)}</td><td>${fmt(row.buy_price)}</td><td>${fmt(item.last_price)}</td><td>$${fmt(rowMarketValue)}</td><td class="${cls(row.pnl)}">${money(row.pnl)}</td><td class="${cls(row.pnl_pct)}">${pct(row.pnl_pct)}</td><td></td><td></td></tr>`);
-      });
-    }
-  });
-  document.getElementById("positions").innerHTML = `<thead><tr><th>标的</th>${sortablePositionHead("total_shares")}${sortablePositionHead("avg_cost")}${sortablePositionHead("last_price")}${sortablePositionHead("market_value")}${sortablePositionHead("total_pnl")}${sortablePositionHead("total_pnl_pct")}${sortablePositionHead("market_weight_pct")}<th>操作</th></tr></thead><tbody>${positionRows.join("")}</tbody>`;
-  document.querySelectorAll("[data-position-sort]").forEach(th => {
-    th.addEventListener("click", () => {
-      const key = th.dataset.positionSort;
-      if (positionSort.key === key) {
-        positionSort.direction = positionSort.direction === "desc" ? "asc" : "desc";
-      } else {
-        positionSort = { key, direction: "desc" };
-      }
-      renderPositionTable();
+const watchBody = document.querySelector('#watch-table tbody');
+watchBody.innerHTML = (DATA.watch_levels||[]).map(w=>{
+  const distOpen = w.last_price!=null ? (w.last_price - w.open_price)/w.open_price*100 : null;
+  const distAdd = (w.add_price!=null && w.last_price!=null) ? (w.last_price - w.add_price)/w.add_price*100 : null;
+  const st = watchStatus(w);
+  return `<tr>
+    <td class="name">${w.ticker}</td>
+    <td>${fmt(w.last_price)}</td>
+    <td>${fmt(w.open_price)}</td>
+    <td>${w.add_price!=null?fmt(w.add_price):'—'}</td>
+    <td class="${pnlClass(distOpen)}">${distOpen!=null?sign(distOpen)+fmt(distOpen)+'%':'—'}</td>
+    <td class="${pnlClass(distAdd)}">${distAdd!=null?sign(distAdd)+fmt(distAdd)+'%':'—'}</td>
+    <td><span class="pill ${st.cls}">${st.label}</span></td>
+  </tr>`;
+}).join('');
+
+// news
+document.getElementById('news-list').innerHTML = (DATA.news||[]).map(n=>`
+  <div class="news-item">
+    <div class="ticker">${n.ticker}</div>
+    <div class="body">${n.text}</div>
+  </div>
+`).join('') || '<div style="color:var(--text-muted);font-size:13px;">暂无新闻数据</div>';
+
+// watchlist grouped by category
+const groupsEl = document.getElementById('watchlist-groups');
+function renderWatchlist(filter){
+  const f = (filter||'').trim().toUpperCase();
+  let html = '';
+  (DATA.categories||[]).forEach(cat=>{
+    const rows = cat.items.filter(it => !f || it.ticker.toUpperCase().includes(f));
+    if(rows.length===0) return;
+    html += `<div class="cat-block"><div class="cat-title">${cat.name}</div><table><tbody>`;
+    rows.forEach(it=>{
+      html += `<tr><td class="name" style="width:80px">${it.ticker}</td>
+        <td>${fmt(it.last_price)}</td>
+        <td class="${pnlClass(it.change_pct)}">${it.change_pct!=null?sign(it.change_pct)+fmt(it.change_pct)+'%':'—'}</td></tr>`;
     });
+    html += `</tbody></table></div>`;
   });
-  document.querySelectorAll("[data-expand]").forEach(button => {
-    button.addEventListener("click", () => {
-      const ticker = button.dataset.expand;
-      if (expandedPositions.has(ticker)) {
-        expandedPositions.delete(ticker);
-      } else {
-        expandedPositions.add(ticker);
-      }
-      renderPositionTable();
-    });
-  });
+  groupsEl.innerHTML = html || '<div style="color:var(--text-muted);font-size:13px;">无匹配结果</div>';
 }
-function renderSources() {
-  document.getElementById("source-count").textContent = `${REPORT.sources.length} 条`;
-  document.getElementById("sources").innerHTML = table(["代码", "收盘价", "来源", "说明"], REPORT.sources.map(s => `<tr><td><span class="ticker">${s.ticker}</span></td><td>${fmt(s.close)}</td><td>${s.source}</td><td>${s.note}</td></tr>`));
-  document.getElementById("sources-wrap").classList.toggle("hidden", !sourcesVisible);
-  document.getElementById("toggle-sources").textContent = sourcesVisible ? "隐藏明细" : "显示明细";
-}
-function renderIntelligence() {
-  const intel = REPORT.intelligence || {};
-  const overview = intel.position_overview || {};
-  const list = items => (items || []).length ? `<ul class="overview-list">${items.map(item => `<li>${item}</li>`).join("")}</ul>` : `<div class="intel-line">暂无明显项目</div>`;
-  const majorNews = (intel.major_news || {}).portfolio_news_summary || [];
-  const newsList = majorNews.length ? majorNews.map(item => (
-    `<div class="news-item">
-      <span class="pill ${item.tone_class}">${item.ticker} · ${item.tone}</span>
-      <div>
-        <a class="news-title" href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-        <div class="news-meta">${item.source || "Yahoo Finance"} · ${item.date || ""}</div>
-        <div class="news-impact">${item.impact || ""}</div>
-      </div>
-    </div>`
-  )).join("") : `<div class="intel-line">暂无重大新闻更新</div>`;
-  document.getElementById("intel-summary").innerHTML = `
-    <div class="overview-title">组合摘要</div>
-    <div class="intel-line">${overview.conclusion || intel.summary || ""}</div>
-    <div class="overview-title" style="margin-top:12px;">持仓重大新闻</div>
-    <div class="news-strip">${newsList}</div>
-    <div class="overview-grid">
-      <div class="overview-box"><div class="overview-label">主要机会</div>${list(overview.opportunities)}</div>
-      <div class="overview-box"><div class="overview-label">主要风险</div>${list(overview.risks)}</div>
-      <div class="overview-box"><div class="overview-label">行动重点</div>${list(overview.actions)}</div>
-    </div>
-    <div class="intel-line">${intel.summary || ""}</div>
-  `;
-
-  // 中性化的价位状态映射：不用"买入/试仓/暂不补仓"这类操作建议式措辞，
-  // 只客观描述现价相对你记录的开仓/加仓价的位置
-  const STATUS_MAP = {
-    buy:   { label: "已达加仓价位", text: "现价已低于你记录的加仓价，进入你此前设定的观察区间。" },
-    watch: { label: "接近开仓价位", text: "现价接近或略低于你记录的开仓价，可继续跟踪。" },
-    hold:  { label: "尚未到价",     text: "现价尚未到你记录的关注价位，按原计划继续观察即可。" },
-    risk:  { label: "浮亏较深",     text: "该持仓当前浮亏明显，价格显著低于你的成本区间，建议先看趋势是否企稳，而不是单纯因为下跌加仓。" },
-  };
-
-  // 把每只票的 positive/negative/trend 三段文字做成"签名"，找出被多只票共用的（行业模板），
-  // 拆到上面的行业共性区块只展示一次；只有该票独有的文字才继续显示在卡片里
-  const cards = intel.cards || [];
-  const sigCount = {};
-  cards.forEach(item => {
-    const sig = `${item.positive}|||${item.negative}|||${item.trend}`;
-    sigCount[sig] = (sigCount[sig] || 0) + 1;
-  });
-  const sigGroups = {};
-  cards.forEach(item => {
-    const sig = `${item.positive}|||${item.negative}|||${item.trend}`;
-    if (sigCount[sig] > 1) {
-      if (!sigGroups[sig]) sigGroups[sig] = { tickers: [], positive: item.positive, negative: item.negative, trend: item.trend };
-      sigGroups[sig].tickers.push(item.ticker);
-    }
-  });
-  const sectorHtml = Object.values(sigGroups).map(g => `
-    <div class="sector-block">
-      <div class="sector-tickers">${g.tickers.join(" · ")}</div>
-      <div class="intel-line"><b>共性利好：</b>${g.positive}</div>
-      <div class="intel-line"><b>共性利空：</b>${g.negative}</div>
-      <div class="intel-line"><b>共性趋势：</b>${g.trend}</div>
-    </div>
-  `).join("");
-  const sectorContextEl = document.getElementById("sector-context");
-  sectorContextEl.style.display = sectorHtml ? "block" : "none";
-  sectorContextEl.innerHTML = sectorHtml
-    ? `<div class="overview-title">行业共性背景（同组股票共用，非逐票分析）</div>${sectorHtml}`
-    : "";
-
-  document.getElementById("intelligence").innerHTML = cards.map(item => {
-    const sig = `${item.positive}|||${item.negative}|||${item.trend}`;
-    const isShared = sigCount[sig] > 1;
-    const status = STATUS_MAP[item.tone] || { label: item.action, text: item.advice };
-    return `<article class="intel-card">
-      <div class="intel-top">
-        <div><span class="ticker">${item.ticker}</span><div class="intel-price">现价 ${fmt(item.last_price)}</div></div>
-        <span class="pill ${item.tone}">${status.label}</span>
-      </div>
-      <div class="intel-line"><b>价位状态：</b>${status.text}</div>
-      ${isShared ? `<div class="intel-line intel-muted">利好/利空/趋势见上方"行业共性背景"</div>` : `
-        <div class="intel-line"><b>趋势：</b>${item.trend}</div>
-        <div class="intel-line"><b>利好：</b>${item.positive}</div>
-        <div class="intel-line"><b>利空：</b>${item.negative}</div>
-      `}
-      ${item.major_news ? `<div class="intel-line"><b>重大新闻：</b><a class="intel-source" href="${item.major_news.url}" target="_blank" rel="noopener noreferrer">${item.major_news.title}</a></div>` : ""}
-      <a class="intel-source" href="${item.source_url}" target="_blank" rel="noopener noreferrer">${item.source_label}</a>
-    </article>`;
-  }).join("");
-}
-function renderPerformance() {
-  const periods = REPORT.performance.periods || [];
-  const active = periods.find(item => item.key === REPORT.performance.default_range) || periods[0];
-  if (!active) return;
-  document.getElementById("period-value").className = `period-value ${cls(active.pnl)}`;
-  document.getElementById("period-value").textContent = money(active.pnl);
-  document.getElementById("period-sub").textContent = `${pct(active.pnl_pct)} · ${REPORT.performance.basis}（累计浮盈亏，非区间涨跌，暂未接入每日历史快照）`;
-  document.getElementById("range-tabs").innerHTML = "";
-}
-function render() {
-  document.getElementById("date").textContent = REPORT.date_label;
-  document.getElementById("source").textContent = `生成时间：${REPORT.generated_at}`;
-  const p = REPORT.portfolio;
-  document.getElementById("metrics").innerHTML = [
-    { label: "总市值", value: `$${fmt(p.total_market_value)}`, hint: "", tone: "neutral" },
-    { label: "总成本", value: `$${fmt(p.total_cost)}`, hint: "", tone: "neutral" },
-    { label: "总浮盈亏", value: money(p.total_pnl), hint: pct(p.total_pnl_pct), tone: cls(p.total_pnl) },
-    { label: "持仓标的", value: String(p.position_count), hint: "跨平台合并", tone: "neutral" }
-  ].map(item => `<div class="metric"><div class="label">${item.label}</div><div class="value ${item.tone}">${item.value}</div><div class="hint">${item.hint}</div></div>`).join("");
-  renderPerformance();
-  document.getElementById("position-count").textContent = `${p.position_count} 个标的`;
-  renderPositionTable();
-  renderIntelligence();
-  document.getElementById("levels").innerHTML = table(["标的", "现价", "开仓价", "加仓价", "距开仓", "距加仓", "状态", "坐标", "备注"], REPORT.watch_levels.map(w => `<tr><td><span class="ticker">${w.ticker}</span></td><td>${fmt(w.last_price)}</td><td>${fmt(w.open_price)}</td><td>${w.add_price == null ? "—" : fmt(w.add_price)}</td><td class="${cls(w.distance_open_pct)}">${pct(w.distance_open_pct)}</td><td class="${cls(w.distance_add_pct)}">${pct(w.distance_add_pct)}</td><td><span class="pill ${w.status_class}">${w.status}</span></td><td>${levelAxis(w)}</td><td>${w.note || ""}</td></tr>`));
-  renderCategories("");
-  document.getElementById("search").addEventListener("input", e => renderCategories(e.target.value));
-  document.getElementById("notes").innerHTML = REPORT.notes.map(n => `<div class="note">${n}</div>`).join("");
-  document.getElementById("toggle-sources").addEventListener("click", () => {
-    sourcesVisible = !sourcesVisible;
-    renderSources();
-  });
-  renderSources();
-}
-function renderCategories(query) {
-  const q = query.trim().toUpperCase();
-  document.getElementById("categories").innerHTML = REPORT.categories.map(cat => {
-    const items = cat.items.filter(x => !q || x.ticker.includes(q));
-    if (!items.length) return "";
-    return `<div class="cat"><div class="cat-title">${cat.name}</div><div class="chips">${items.map(item => `<span class="chip"><b>${item.ticker}</b><span>${fmt(item.last_price)}</span><span class="${cls(item.change_pct)}">${pct(item.change_pct)}</span></span>`).join("")}</div></div>`;
-  }).join("") || `<div class="cat"><div class="note">没有匹配的代码</div></div>`;
+renderWatchlist('');
+document.getElementById('watchlist-search').addEventListener('input', e=>renderWatchlist(e.target.value));
 }
 </script>
 </body>
