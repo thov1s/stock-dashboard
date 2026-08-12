@@ -11,7 +11,12 @@ export default async () => {
       throw new Error(`upstream returned ${upstream.status}`);
     }
 
-    return new Response(await upstream.text(), {
+    const html = (await upstream.text()).replace(
+      /<title>美股盯盘日报（GitHub）<\/title>/,
+      "<title>美股盯盘日报（Netlify）</title>",
+    );
+
+    return new Response(html, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Netlify-CDN-Cache-Control":
