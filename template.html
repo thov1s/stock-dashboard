@@ -131,6 +131,26 @@ h1 { margin: 5px 0 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.08; lett
   font-weight: 700;
 }
 .range-tabs button.active { color: #083b49; border-color: rgba(15,159,143,.42); background: #dff7f2; }
+.history-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.history-tabs { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel2); }
+.history-tabs button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 11px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.history-tabs button.active { color: #083b49; background: #fff; box-shadow: 0 2px 8px rgba(33, 91, 104, .10); }
+.history-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 8px; }
+.history-stat { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--panel2); }
+.history-stat-label { color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+.history-stat-value { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.history-note { color: var(--subtle); font-size: 10px; margin-top: 6px; }
 .metric, .card, section {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -591,6 +611,11 @@ footer { color: var(--subtle); font-size: 12px; padding-top: 8px; }
 }
 @media (max-width: 430px) {
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .history-head-actions { width: 100%; justify-content: space-between; }
+  .history-tabs button { padding: 6px 9px; }
+  .history-summary { gap: 6px; }
+  .history-stat { padding: 9px 10px; }
+  .history-stat-value { font-size: 16px; }
   h1 { font-size: 22px; }
   .lock-box { width: calc(100vw - 28px); }
 }
@@ -619,7 +644,17 @@ footer { color: var(--subtle); font-size: 12px; padding-top: 8px; }
     <div id="attribution-body" style="padding:12px;"></div>
   </section>
   <section id="portfolio-history-section">
-    <div class="section-head"><h2>组合市值走势</h2><span class="pill" id="history-range-pill"></span></div>
+    <div class="section-head">
+      <h2>组合市值走势</h2>
+      <div class="history-head-actions">
+        <div class="history-tabs" id="history-tabs" aria-label="选择走势图时间范围">
+          <button type="button" data-history-range="week">近1周</button>
+          <button type="button" data-history-range="month" class="active">近1月</button>
+          <button type="button" data-history-range="all">全部</button>
+        </div>
+        <span class="pill" id="history-range-pill"></span>
+      </div>
+    </div>
     <div id="portfolio-history-body" style="padding:12px;"></div>
   </section>
   <section id="calendar-section">
@@ -721,6 +756,7 @@ function levelAxis(w) {
 let positionSort = { key: "market_weight_pct", direction: "desc" };
 let positionPlatformFilter = "all";
 const expandedPositions = new Set();
+let historyRange = "month";
 let sourcesVisible = false;
 let newsVisible = false;
 function unlock() {
@@ -1095,13 +1131,25 @@ function renderAttribution() {
   }).join("");
 }
 function renderPortfolioHistory() {
-  const history = (REPORT.portfolio_history || []).filter(h => h.total_market_value !== null && h.total_market_value !== undefined);
+  const fullHistory = (REPORT.portfolio_history || [])
+    .filter(h => h.total_market_value !== null && h.total_market_value !== undefined)
+    .sort((a, b) => a.date.localeCompare(b.date));
   const pill = document.getElementById("history-range-pill");
   const body = document.getElementById("portfolio-history-body");
-  if (history.length < 2) {
+  if (fullHistory.length < 2) {
     pill.textContent = "";
     body.innerHTML = `<div class="intel-line intel-muted">还没有足够的历史数据，随着每天运行会逐渐画出走势曲线。</div>`;
     return;
+  }
+
+  const lastDate = new Date(`${fullHistory[fullHistory.length - 1].date}T00:00:00`);
+  const rangeDays = historyRange === "week" ? 7 : historyRange === "month" ? 30 : null;
+  let history = fullHistory;
+  if (rangeDays !== null) {
+    const cutoff = new Date(lastDate);
+    cutoff.setDate(cutoff.getDate() - rangeDays);
+    history = fullHistory.filter(item => new Date(`${item.date}T00:00:00`) >= cutoff);
+    if (history.length < 2) history = fullHistory.slice(-(historyRange === "week" ? 5 : 21));
   }
   const values = history.map(h => h.total_market_value);
   const chartW = 640, chartH = 160, padX = 4, padY = 16;
@@ -1116,8 +1164,26 @@ function renderPortfolioHistory() {
   const rising = values[values.length - 1] >= values[0];
   const color = rising ? "var(--gain)" : "var(--loss)";
   const first = history[0], last = history[history.length - 1];
+  const change = last.total_market_value - first.total_market_value;
+  const changePct = first.total_market_value ? change / first.total_market_value * 100 : 0;
+  const rangeLabel = historyRange === "week" ? "近1周" : historyRange === "month" ? "近1月" : "全部";
   pill.textContent = `${first.date} → ${last.date}`;
+  document.querySelectorAll("[data-history-range]").forEach(button => {
+    const active = button.dataset.historyRange === historyRange;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
   body.innerHTML = `
+    <div class="history-summary">
+      <div class="history-stat">
+        <div class="history-stat-label">${rangeLabel}市值变化</div>
+        <div class="history-stat-value ${cls(change)}">${money(change)}</div>
+      </div>
+      <div class="history-stat">
+        <div class="history-stat-label">${rangeLabel}涨跌幅</div>
+        <div class="history-stat-value ${cls(changePct)}">${pct(changePct)}</div>
+      </div>
+    </div>
     <svg viewBox="0 0 ${chartW} ${chartH}" style="width:100%;height:140px;display:block;" preserveAspectRatio="none">
       <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
     </svg>
@@ -1125,6 +1191,7 @@ function renderPortfolioHistory() {
       <span>${first.date} · $${fmt(first.total_market_value)}</span>
       <span>${last.date} · $${fmt(last.total_market_value)}</span>
     </div>
+    <div class="history-note">按组合总市值计算；期间如有买卖、入金或出金，变化不等同于纯投资收益。</div>
   `;
 }
 function renderCalendar() {
@@ -1228,6 +1295,12 @@ function render() {
   document.getElementById("position-count").textContent = `${p.position_count} 个标的`;
   renderAttribution();
   renderPortfolioHistory();
+  document.querySelectorAll("[data-history-range]").forEach(button => {
+    button.addEventListener("click", () => {
+      historyRange = button.dataset.historyRange;
+      renderPortfolioHistory();
+    });
+  });
   renderCalendar();
   renderPositionTable();
   renderIntelligence();
