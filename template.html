@@ -151,6 +151,68 @@ h1 { margin: 5px 0 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.08; lett
 .history-stat-label { color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 2px; }
 .history-stat-value { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .history-note { color: var(--subtle); font-size: 10px; margin-top: 6px; }
+.history-chart-wrap {
+  position: relative;
+  margin-top: 4px;
+  touch-action: pan-y;
+}
+.history-chart-wrap:focus { outline: none; }
+.history-chart-wrap:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 8px; }
+.history-chart { width: 100%; height: 140px; display: block; overflow: visible; }
+.history-week-marker { fill: #fff; stroke: var(--blue); stroke-width: 2; pointer-events: none; }
+.history-hover-line { stroke: #7e99a2; stroke-width: 1; stroke-dasharray: 4 4; pointer-events: none; }
+.history-hover-dot { fill: #fff; stroke: var(--blue); stroke-width: 3; pointer-events: none; }
+.history-tooltip {
+  position: absolute;
+  z-index: 4;
+  top: 8px;
+  min-width: 190px;
+  max-width: min(240px, calc(100vw - 52px));
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 10px 28px rgba(33, 91, 104, .16);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
+  transition: opacity .12s ease, transform .12s ease;
+}
+.history-tooltip.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.history-tooltip.align-left { transform: translateX(0) translateY(0); }
+.history-tooltip.align-right { transform: translateX(-100%) translateY(0); }
+.history-tooltip-title { font-weight: 800; margin-bottom: 3px; }
+.history-tooltip-row { display: flex; justify-content: space-between; gap: 14px; color: var(--muted); }
+.history-tooltip-row span, .history-tooltip-row strong { white-space: nowrap; }
+.history-tooltip-row strong { color: var(--text); }
+.history-axis {
+  position: relative;
+  height: 30px;
+  margin: 0 4px;
+  border-top: 1px solid var(--line);
+}
+.history-axis-tick {
+  position: absolute;
+  top: -4px;
+  transform: translateX(-50%);
+  color: var(--subtle);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.history-axis-tick::before {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 6px;
+  margin: 0 auto 4px;
+  background: var(--line);
+}
+.history-axis-tick.first { transform: none; }
+.history-axis-tick.last { transform: translateX(-100%); }
 .metric, .card, section {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -1161,6 +1223,37 @@ function renderPortfolioHistory() {
     const y = padY + (chartH - padY * 2) * (1 - (pt.total_market_value - min) / range);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
+  const shortDate = date => {
+    const parts = date.split("-");
+    return `${Number(parts[1])}/${Number(parts[2])}`;
+  };
+  const weekKey = date => {
+    const d = new Date(`${date}T00:00:00`);
+    const mondayOffset = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - mondayOffset);
+    return d.toISOString().slice(0, 10);
+  };
+  const weekly = [];
+  history.forEach((item, index) => {
+    const key = weekKey(item.date);
+    let group = weekly[weekly.length - 1];
+    if (!group || group.key !== key) {
+      group = { key, first: item, last: item, firstIndex: index, lastIndex: index };
+      weekly.push(group);
+    } else {
+      group.last = item;
+      group.lastIndex = index;
+    }
+  });
+  weekly.forEach((group, index) => {
+    const baseValue = index > 0 ? weekly[index - 1].last.total_market_value : group.first.total_market_value;
+    group.change = group.last.total_market_value - baseValue;
+    group.changePct = baseValue ? group.change / baseValue * 100 : 0;
+    group.x = padX + group.lastIndex * stepX;
+    group.y = padY + (chartH - padY * 2) * (1 - (group.last.total_market_value - min) / range);
+  });
+  const axisStep = Math.max(1, Math.ceil(weekly.length / 7));
+  const axisWeeks = weekly.filter((group, index) => index === 0 || index === weekly.length - 1 || index % axisStep === 0);
   const rising = values[values.length - 1] >= values[0];
   const color = rising ? "var(--gain)" : "var(--loss)";
   const first = history[0], last = history[history.length - 1];
@@ -1184,15 +1277,80 @@ function renderPortfolioHistory() {
         <div class="history-stat-value ${cls(changePct)}">${pct(changePct)}</div>
       </div>
     </div>
-    <svg viewBox="0 0 ${chartW} ${chartH}" style="width:100%;height:140px;display:block;" preserveAspectRatio="none">
-      <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    </svg>
+    <div class="history-chart-wrap" tabindex="0" role="img" aria-label="组合市值周度走势图，可移动鼠标或轻触查看每周变化">
+      <svg class="history-chart" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none">
+        <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${weekly.map(group => `<circle class="history-week-marker" cx="${group.x.toFixed(1)}" cy="${group.y.toFixed(1)}" r="3.2"/>`).join("")}
+        <line class="history-hover-line" x1="0" x2="0" y1="${padY}" y2="${chartH - padY}" visibility="hidden"/>
+        <circle class="history-hover-dot" cx="0" cy="0" r="4.8" visibility="hidden"/>
+      </svg>
+      <div class="history-tooltip" role="status" aria-live="polite"></div>
+    </div>
+    <div class="history-axis" aria-hidden="true">
+      ${axisWeeks.map((group, index) => {
+        const left = group.x / chartW * 100;
+        const edgeClass = index === 0 ? " first" : index === axisWeeks.length - 1 ? " last" : "";
+        return `<span class="history-axis-tick${edgeClass}" style="left:${left.toFixed(2)}%">${shortDate(group.last.date)}</span>`;
+      }).join("")}
+    </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--subtle);margin-top:6px;">
       <span>${first.date} · $${fmt(first.total_market_value)}</span>
       <span>${last.date} · $${fmt(last.total_market_value)}</span>
     </div>
     <div class="history-note">按组合总市值计算；期间如有买卖、入金或出金，变化不等同于纯投资收益。</div>
   `;
+
+  const chartWrap = body.querySelector(".history-chart-wrap");
+  const tooltip = body.querySelector(".history-tooltip");
+  const hoverLine = body.querySelector(".history-hover-line");
+  const hoverDot = body.querySelector(".history-hover-dot");
+  const showWeek = index => {
+    const group = weekly[Math.max(0, Math.min(index, weekly.length - 1))];
+    chartWrap.dataset.weekIndex = String(Math.max(0, Math.min(index, weekly.length - 1)));
+    const xPct = group.x / chartW * 100;
+    tooltip.style.left = `${xPct}%`;
+    tooltip.classList.toggle("align-left", xPct < 16);
+    tooltip.classList.toggle("align-right", xPct > 84);
+    tooltip.innerHTML = `
+      <div class="history-tooltip-title">${shortDate(group.first.date)} – ${shortDate(group.last.date)}</div>
+      <div class="history-tooltip-row"><span>周末市值</span><strong>$${fmt(group.last.total_market_value)}</strong></div>
+      <div class="history-tooltip-row"><span>${index > 0 ? "较前周" : "本区间"}</span><strong class="${cls(group.change)}">${money(group.change)} · ${pct(group.changePct)}</strong></div>`;
+    tooltip.classList.add("visible");
+    hoverLine.setAttribute("x1", group.x);
+    hoverLine.setAttribute("x2", group.x);
+    hoverLine.setAttribute("visibility", "visible");
+    hoverDot.setAttribute("cx", group.x);
+    hoverDot.setAttribute("cy", group.y);
+    hoverDot.setAttribute("visibility", "visible");
+    chartWrap.setAttribute("aria-label", `${group.first.date}至${group.last.date}，周末市值${fmt(group.last.total_market_value)}，变化${money(group.change)}，${pct(group.changePct)}`);
+  };
+  const hideWeek = () => {
+    tooltip.classList.remove("visible");
+    hoverLine.setAttribute("visibility", "hidden");
+    hoverDot.setAttribute("visibility", "hidden");
+  };
+  const showNearestWeek = event => {
+    const rect = chartWrap.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+    const normalizedX = x / rect.width * chartW;
+    let nearest = 0;
+    weekly.forEach((group, index) => {
+      if (Math.abs(group.x - normalizedX) < Math.abs(weekly[nearest].x - normalizedX)) nearest = index;
+    });
+    showWeek(nearest);
+  };
+  chartWrap.addEventListener("pointermove", showNearestWeek);
+  chartWrap.addEventListener("pointerdown", showNearestWeek);
+  chartWrap.addEventListener("pointerleave", hideWeek);
+  chartWrap.addEventListener("blur", hideWeek);
+  chartWrap.addEventListener("keydown", event => {
+    if (!weekly.length || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    const current = Number(chartWrap.dataset.weekIndex || weekly.length - 1);
+    const next = Math.max(0, Math.min(weekly.length - 1, current + (event.key === "ArrowRight" ? 1 : -1)));
+    chartWrap.dataset.weekIndex = String(next);
+    showWeek(next);
+  });
 }
 function renderCalendar() {
   const events = REPORT.calendar_events || [];
