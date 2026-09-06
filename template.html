@@ -455,6 +455,7 @@ tr:last-child td { border-bottom: 0; }
 .axis-marker.current { background: var(--blue); height: 36px; top: 5px; }
 .axis-marker.open { background: var(--loss); border-left: 2px dashed var(--loss); }
 .axis-marker.add { background: var(--purple); border-left: 2px dotted var(--purple); }
+.axis-marker.priority-add { background: var(--warn); border-left: 3px double var(--warn); }
 .axis-marker.stop { background: var(--loss); border-left: 2px solid var(--loss); }
 .axis-label {
   position: absolute;
@@ -464,6 +465,9 @@ tr:last-child td { border-bottom: 0; }
   font-size: 10px;
   white-space: nowrap;
 }
+.axis-label.current, .axis-label.priority-add { top: -2px; font-weight: 750; }
+.axis-label.current { color: var(--blue); }
+.axis-label.priority-add { color: var(--warn); }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 16px 18px 18px; }
 .note, .news {
   background: linear-gradient(180deg, #ffffff, #f5fbfc);
@@ -740,7 +744,7 @@ footer { color: var(--subtle); font-size: 12px; padding-top: 8px; }
     <div class="master-grid" id="master-cards"></div>
   </section>
   <section>
-    <div class="section-head"><h2>重点买点追踪</h2><div class="section-actions"><span class="pill watch">开仓 / 加仓</span><span id="levels-notes-toggle-wrap"></span></div></div>
+    <div class="section-head"><h2>重点买点追踪</h2><div class="section-actions"><span class="pill watch">开仓 / 加仓 / 重点加仓</span><span id="levels-notes-toggle-wrap"></span></div></div>
     <div class="table-wrap"><table id="levels" class="stack-mobile"></table></div>
   </section>
   <section>
@@ -796,6 +800,7 @@ function levelAxis(w) {
   if (w.last_price === null || w.last_price === undefined) return "—";
   const points = [w.last_price, w.open_price];
   if (w.add_price !== null && w.add_price !== undefined) points.push(w.add_price);
+  if (w.priority_add_price !== null && w.priority_add_price !== undefined) points.push(w.priority_add_price);
   if (w.stop_price !== null && w.stop_price !== undefined) points.push(w.stop_price);
   const min = Math.min(...points);
   const max = Math.max(...points);
@@ -804,14 +809,17 @@ function levelAxis(w) {
   const high = max + padding;
   const pos = value => clampPct(((value - low) / (high - low)) * 100);
   const markers = [
-    `<span class="axis-marker current" style="left:${pos(w.last_price)}%"></span><span class="axis-label" style="left:${pos(w.last_price)}%">现价</span>`,
-    `<span class="axis-marker open" style="left:${pos(w.open_price)}%"></span><span class="axis-label" style="left:${pos(w.open_price)}%">开仓</span>`
+    `<span class="axis-marker current" style="left:${pos(w.last_price)}%"></span><span class="axis-label current" style="left:${pos(w.last_price)}%">现价</span>`,
+    `<span class="axis-marker open" style="left:${pos(w.open_price)}%"></span><span class="axis-label open" style="left:${pos(w.open_price)}%">开仓</span>`
   ];
   if (w.add_price !== null && w.add_price !== undefined) {
-    markers.push(`<span class="axis-marker add" style="left:${pos(w.add_price)}%"></span><span class="axis-label" style="left:${pos(w.add_price)}%">加仓</span>`);
+    markers.push(`<span class="axis-marker add" style="left:${pos(w.add_price)}%"></span><span class="axis-label add" style="left:${pos(w.add_price)}%">加仓</span>`);
+  }
+  if (w.priority_add_price !== null && w.priority_add_price !== undefined) {
+    markers.push(`<span class="axis-marker priority-add" style="left:${pos(w.priority_add_price)}%"></span><span class="axis-label priority-add" style="left:${pos(w.priority_add_price)}%">重点加仓</span>`);
   }
   if (w.stop_price !== null && w.stop_price !== undefined) {
-    markers.push(`<span class="axis-marker stop" style="left:${pos(w.stop_price)}%"></span><span class="axis-label" style="left:${pos(w.stop_price)}%">止损</span>`);
+    markers.push(`<span class="axis-marker stop" style="left:${pos(w.stop_price)}%"></span><span class="axis-label stop" style="left:${pos(w.stop_price)}%">止损</span>`);
   }
   return `<div class="level-axis">${markers.join("")}</div>`;
 }
@@ -904,9 +912,11 @@ const levelSortLabels = {
   last_price: "现价",
   open_price: "开仓价",
   add_price: "加仓价",
+  priority_add_price: "重点加仓价",
   stop_price: "止损价",
   distance_open_pct: "距开仓",
   distance_add_pct: "距加仓",
+  distance_priority_add_pct: "距重点加仓",
   distance_stop_pct: "距止损",
 };
 function sortLevels() {
@@ -929,11 +939,12 @@ function sortableLevelHead(key) {
 function renderLevelsTable() {
   const hasNotes = REPORT.watch_levels.some(w => w.note);
   const hasStop = REPORT.watch_levels.some(w => w.stop_price !== null && w.stop_price !== undefined);
+  const hasPriorityAdd = REPORT.watch_levels.some(w => w.priority_add_price !== null && w.priority_add_price !== undefined);
   const noteTh = hasNotes ? "<th>备注</th>" : "";
-  const rows = sortLevels().map(w => `<tr><td><span class="ticker">${w.ticker}</span></td><td data-label="现价">${fmt(w.last_price)}</td><td data-label="开仓价">${fmt(w.open_price)}</td><td data-label="加仓价">${w.add_price == null ? "—" : fmt(w.add_price)}</td>${hasStop ? `<td data-label="止损价" class="${w.stop_price != null ? "down" : ""}">${w.stop_price == null ? "—" : fmt(w.stop_price)}</td>` : ""}<td data-label="距开仓" class="${cls(w.distance_open_pct)}">${pct(w.distance_open_pct)}</td><td data-label="距加仓" class="${cls(w.distance_add_pct)}">${pct(w.distance_add_pct)}</td>${hasStop ? `<td data-label="距止损" class="${cls(w.distance_stop_pct)}">${pct(w.distance_stop_pct)}</td>` : ""}<td data-label="状态"><span class="pill ${w.status_class}">${w.status}</span></td><td data-label="坐标">${levelAxis(w)}</td>${hasNotes ? `<td data-label="备注">${w.note || ""}</td>` : ""}</tr>`);
+  const rows = sortLevels().map(w => `<tr><td><span class="ticker">${w.ticker}</span></td><td data-label="现价">${fmt(w.last_price)}</td><td data-label="开仓价">${fmt(w.open_price)}</td><td data-label="加仓价">${w.add_price == null ? "—" : fmt(w.add_price)}</td>${hasPriorityAdd ? `<td data-label="重点加仓价">${w.priority_add_price == null ? "—" : fmt(w.priority_add_price)}</td>` : ""}${hasStop ? `<td data-label="止损价" class="${w.stop_price != null ? "down" : ""}">${w.stop_price == null ? "—" : fmt(w.stop_price)}</td>` : ""}<td data-label="距开仓" class="${cls(w.distance_open_pct)}">${pct(w.distance_open_pct)}</td><td data-label="距加仓" class="${cls(w.distance_add_pct)}">${pct(w.distance_add_pct)}</td>${hasPriorityAdd ? `<td data-label="距重点加仓" class="${cls(w.distance_priority_add_pct)}">${pct(w.distance_priority_add_pct)}</td>` : ""}${hasStop ? `<td data-label="距止损" class="${cls(w.distance_stop_pct)}">${pct(w.distance_stop_pct)}</td>` : ""}<td data-label="状态"><span class="pill ${w.status_class}">${w.status}</span></td><td data-label="坐标">${levelAxis(w)}</td>${hasNotes ? `<td data-label="备注">${w.note || ""}</td>` : ""}</tr>`);
   const table = document.getElementById("levels");
   table.classList.toggle("hide-notes", hasNotes && !notesVisible);
-  table.innerHTML = `<thead><tr><th>标的</th>${sortableLevelHead("last_price")}${sortableLevelHead("open_price")}${sortableLevelHead("add_price")}${hasStop ? sortableLevelHead("stop_price") : ""}${sortableLevelHead("distance_open_pct")}${sortableLevelHead("distance_add_pct")}${hasStop ? sortableLevelHead("distance_stop_pct") : ""}<th>状态</th><th>坐标</th>${noteTh}</tr></thead><tbody>${rows.join("")}</tbody>`;
+  table.innerHTML = `<thead><tr><th>标的</th>${sortableLevelHead("last_price")}${sortableLevelHead("open_price")}${sortableLevelHead("add_price")}${hasPriorityAdd ? sortableLevelHead("priority_add_price") : ""}${hasStop ? sortableLevelHead("stop_price") : ""}${sortableLevelHead("distance_open_pct")}${sortableLevelHead("distance_add_pct")}${hasPriorityAdd ? sortableLevelHead("distance_priority_add_pct") : ""}${hasStop ? sortableLevelHead("distance_stop_pct") : ""}<th>状态</th><th>坐标</th>${noteTh}</tr></thead><tbody>${rows.join("")}</tbody>`;
   document.querySelectorAll("[data-level-sort]").forEach(th => {
     th.addEventListener("click", () => {
       const key = th.dataset.levelSort;
