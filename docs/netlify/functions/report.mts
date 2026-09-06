@@ -34,5 +34,7 @@ export default async () => {
 };
 
 export const config = {
-  path: "/",
+  // Keep the old GitHub-backed page available for diagnostics without
+  // overriding the production static dashboard at the site root.
+  path: "/legacy-github-report",
 };
