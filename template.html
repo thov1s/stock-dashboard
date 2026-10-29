@@ -798,7 +798,8 @@ function clampPct(n) {
 }
 function levelAxis(w) {
   if (w.last_price === null || w.last_price === undefined) return "—";
-  const points = [w.last_price, w.open_price];
+  const points = [w.last_price];
+  if (w.open_price !== null && w.open_price !== undefined) points.push(w.open_price);
   if (w.add_price !== null && w.add_price !== undefined) points.push(w.add_price);
   if (w.priority_add_price !== null && w.priority_add_price !== undefined) points.push(w.priority_add_price);
   if (w.stop_price !== null && w.stop_price !== undefined) points.push(w.stop_price);
@@ -809,9 +810,11 @@ function levelAxis(w) {
   const high = max + padding;
   const pos = value => clampPct(((value - low) / (high - low)) * 100);
   const markers = [
-    `<span class="axis-marker current" style="left:${pos(w.last_price)}%"></span><span class="axis-label current" style="left:${pos(w.last_price)}%">现价</span>`,
-    `<span class="axis-marker open" style="left:${pos(w.open_price)}%"></span><span class="axis-label open" style="left:${pos(w.open_price)}%">开仓</span>`
+    `<span class="axis-marker current" style="left:${pos(w.last_price)}%"></span><span class="axis-label current" style="left:${pos(w.last_price)}%">现价</span>`
   ];
+  if (w.open_price !== null && w.open_price !== undefined) {
+    markers.push(`<span class="axis-marker open" style="left:${pos(w.open_price)}%"></span><span class="axis-label open" style="left:${pos(w.open_price)}%">开仓</span>`);
+  }
   if (w.add_price !== null && w.add_price !== undefined) {
     markers.push(`<span class="axis-marker add" style="left:${pos(w.add_price)}%"></span><span class="axis-label add" style="left:${pos(w.add_price)}%">加仓</span>`);
   }
@@ -941,7 +944,7 @@ function renderLevelsTable() {
   const hasStop = REPORT.watch_levels.some(w => w.stop_price !== null && w.stop_price !== undefined);
   const hasPriorityAdd = REPORT.watch_levels.some(w => w.priority_add_price !== null && w.priority_add_price !== undefined);
   const noteTh = hasNotes ? "<th>备注</th>" : "";
-  const rows = sortLevels().map(w => `<tr><td><span class="ticker">${w.ticker}</span></td><td data-label="现价">${fmt(w.last_price)}</td><td data-label="开仓价">${fmt(w.open_price)}</td><td data-label="加仓价">${w.add_price == null ? "—" : fmt(w.add_price)}</td>${hasPriorityAdd ? `<td data-label="重点加仓价">${w.priority_add_price == null ? "—" : fmt(w.priority_add_price)}</td>` : ""}${hasStop ? `<td data-label="止损价" class="${w.stop_price != null ? "down" : ""}">${w.stop_price == null ? "—" : fmt(w.stop_price)}</td>` : ""}<td data-label="距开仓" class="${cls(w.distance_open_pct)}">${pct(w.distance_open_pct)}</td><td data-label="距加仓" class="${cls(w.distance_add_pct)}">${pct(w.distance_add_pct)}</td>${hasPriorityAdd ? `<td data-label="距重点加仓" class="${cls(w.distance_priority_add_pct)}">${pct(w.distance_priority_add_pct)}</td>` : ""}${hasStop ? `<td data-label="距止损" class="${cls(w.distance_stop_pct)}">${pct(w.distance_stop_pct)}</td>` : ""}<td data-label="状态"><span class="pill ${w.status_class}">${w.status}</span></td><td data-label="坐标">${levelAxis(w)}</td>${hasNotes ? `<td data-label="备注">${w.note || ""}</td>` : ""}</tr>`);
+  const rows = sortLevels().map(w => `<tr><td><span class="ticker">${w.ticker}</span></td><td data-label="现价">${fmt(w.last_price)}</td><td data-label="开仓价">${w.open_price == null ? "—" : fmt(w.open_price)}</td><td data-label="加仓价">${w.add_price == null ? "—" : fmt(w.add_price)}</td>${hasPriorityAdd ? `<td data-label="重点加仓价">${w.priority_add_price == null ? "—" : fmt(w.priority_add_price)}</td>` : ""}${hasStop ? `<td data-label="止损价" class="${w.stop_price != null ? "down" : ""}">${w.stop_price == null ? "—" : fmt(w.stop_price)}</td>` : ""}<td data-label="距开仓" class="${cls(w.distance_open_pct)}">${pct(w.distance_open_pct)}</td><td data-label="距加仓" class="${cls(w.distance_add_pct)}">${pct(w.distance_add_pct)}</td>${hasPriorityAdd ? `<td data-label="距重点加仓" class="${cls(w.distance_priority_add_pct)}">${pct(w.distance_priority_add_pct)}</td>` : ""}${hasStop ? `<td data-label="距止损" class="${cls(w.distance_stop_pct)}">${pct(w.distance_stop_pct)}</td>` : ""}<td data-label="状态"><span class="pill ${w.status_class}">${w.status}</span></td><td data-label="坐标">${levelAxis(w)}</td>${hasNotes ? `<td data-label="备注">${w.note || ""}</td>` : ""}</tr>`);
   const table = document.getElementById("levels");
   table.classList.toggle("hide-notes", hasNotes && !notesVisible);
   table.innerHTML = `<thead><tr><th>标的</th>${sortableLevelHead("last_price")}${sortableLevelHead("open_price")}${sortableLevelHead("add_price")}${hasPriorityAdd ? sortableLevelHead("priority_add_price") : ""}${hasStop ? sortableLevelHead("stop_price") : ""}${sortableLevelHead("distance_open_pct")}${sortableLevelHead("distance_add_pct")}${hasPriorityAdd ? sortableLevelHead("distance_priority_add_pct") : ""}${hasStop ? sortableLevelHead("distance_stop_pct") : ""}<th>状态</th><th>坐标</th>${noteTh}</tr></thead><tbody>${rows.join("")}</tbody>`;
