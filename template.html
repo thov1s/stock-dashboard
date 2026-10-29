@@ -398,6 +398,10 @@ tr:last-child td { border-bottom: 0; }
 .cal-tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-right: 8px; font-weight: 700; }
 .cal-tag.earnings { background: #eef7f8; color: var(--teal); }
 .cal-tag.macro { background: #fff7ed; color: var(--warn); }
+.cal-status { display: inline-block; margin-left: 6px; color: var(--subtle); font-size: 11px; }
+.cal-detail { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.cal-source { color: var(--blue); font-size: 12px; text-decoration: none; }
+.cal-source:hover { text-decoration: underline; }
 .cal-empty { color: var(--subtle); font-size: 13px; }
 .cal-item.highlight { background: #dff7f2; border-radius: 10px; }
 
@@ -1427,7 +1431,12 @@ function renderCalendar() {
   const listHtml = events.map(e => `
     <div class="cal-item" data-date="${e.sort_key}">
       <div class="cal-date">${e.date}</div>
-      <div><span class="cal-tag ${e.type}">${e.type === "earnings" ? "财报" : "宏观"}</span>${e.label}</div>
+      <div>
+        <span class="cal-tag ${e.type}">${e.type === "earnings" ? "财报" : "宏观"}</span>${e.label}
+        ${e.status ? `<span class="cal-status">${e.status}</span>` : ""}
+        ${e.detail ? `<div class="cal-detail">${e.detail}</div>` : ""}
+        ${e.source_url ? `<a class="cal-source" href="${e.source_url}" target="_blank" rel="noopener noreferrer">${e.source_name || "查看来源"}</a>` : ""}
+      </div>
     </div>
   `).join("");
 
