@@ -92,6 +92,36 @@ header {
   overflow: hidden;
   position: relative;
 }
+.quick-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 12px;
+  margin: -2px 0 6px;
+  scrollbar-width: none;
+}
+.quick-nav::-webkit-scrollbar { display: none; }
+.quick-nav a {
+  flex: 0 0 auto;
+  color: var(--muted);
+  background: rgba(255,255,255,.78);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.quick-nav a:hover, .quick-nav a:focus-visible { color: #083b49; border-color: var(--teal); background: #e9faf6; outline: none; }
+.focus-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px 18px 18px; }
+.focus-card { min-width: 0; background: linear-gradient(135deg, #ffffff, #f2fbf9); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+.focus-card.event { background: linear-gradient(135deg, #fffdf7, #fff6e7); }
+.focus-card.news { background: linear-gradient(135deg, #f6fbff, #eef8fe); }
+.focus-label { color: var(--subtle); font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.focus-title { color: var(--text); font-size: 13px; font-weight: 750; margin-top: 5px; overflow-wrap: anywhere; }
+.focus-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.focus-link { color: var(--blue); font-size: 12px; font-weight: 700; text-decoration: none; }
+.focus-link:hover { text-decoration: underline; }
 .eyebrow { color: var(--teal); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 750; }
 h1 { margin: 5px 0 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.08; letter-spacing: 0; }
 .date { color: var(--muted); font-size: 14px; margin-top: 6px; }
@@ -648,6 +678,8 @@ footer { color: var(--subtle); font-size: 12px; padding-top: 8px; }
   .date { font-size: 12px; }
   .source { text-align: left; margin-top: 8px; font-size: 11px; padding: 6px 10px; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .quick-nav { position: sticky; top: 0; z-index: 5; margin: 0 -8px 8px; padding: 8px; background: rgba(244,248,251,.94); backdrop-filter: blur(10px); }
+  .focus-grid { grid-template-columns: 1fr; padding: 10px 12px 12px; gap: 8px; }
   .metric { padding: 10px 12px; border-radius: 14px; }
   .metric .label { font-size: 11px; margin-bottom: 3px; }
   .metric .value { font-size: 17px; }
@@ -708,7 +740,14 @@ footer { color: var(--subtle); font-size: 12px; padding-top: 8px; }
     </div>
     <div class="source" id="source"></div>
   </header>
+  <nav class="quick-nav" aria-label="日报快捷导航">
+    <a href="#focus-section">今日重点</a><a href="#calendar-section">关键事件</a><a href="#positions-section">持仓</a><a href="#intel-section">观察</a><a href="#levels-section">买点</a><a href="#watchlist-section">自选</a>
+  </nav>
   <div class="metrics" id="metrics"></div>
+  <section id="focus-section">
+    <div class="section-head"><h2>今日重点</h2><span class="pill">事件优先</span></div>
+    <div class="focus-grid" id="focus-grid"></div>
+  </section>
   <section id="attribution-section">
     <div class="section-head"><h2>今日盈亏归因</h2><span class="pill" id="attribution-pill"></span></div>
     <div id="attribution-body" style="padding:12px;"></div>
@@ -731,23 +770,23 @@ footer { color: var(--subtle); font-size: 12px; padding-top: 8px; }
     <div class="section-head"><h2>近期关键事件</h2><span class="pill">财报 / 宏观</span></div>
     <div id="calendar-body" style="padding:12px;"></div>
   </section>
-  <section>
+  <section id="positions-section">
     <div class="section-head"><h2>持仓汇总</h2><div class="section-actions"><span class="pill" id="position-count"></span><span id="position-platform-filter"></span></div></div>
     <div class="table-wrap"><table id="positions" class="stack-mobile"></table></div>
   </section>
-  <section>
+  <section id="intel-section">
     <div class="section-head"><h2>利好利空与操作观察</h2><span class="pill">持仓 + 重点买点</span></div>
     <div class="intel-summary" id="intel-summary"></div>
     <div class="intel-summary" id="sector-context"></div>
     <div class="intel-filter-bar" id="intel-filter-bar" style="padding:0 18px;"></div>
     <div class="intel-grid" id="intelligence"></div>
   </section>
-  <section>
+  <section id="levels-section">
     <div class="section-head"><h2>大师视角：质量、价格与安全边际</h2><span class="pill master">巴菲特 / 芒格框架</span></div>
     <div class="master-summary" id="master-summary"></div>
     <div class="master-grid" id="master-cards"></div>
   </section>
-  <section>
+  <section id="watchlist-section">
     <div class="section-head"><h2>重点买点追踪</h2><div class="section-actions"><span class="pill watch">开仓 / 加仓 / 重点加仓</span><span id="levels-notes-toggle-wrap"></span></div></div>
     <div class="table-wrap"><table id="levels" class="stack-mobile"></table></div>
   </section>
@@ -1455,6 +1494,23 @@ function renderCalendar() {
     });
   });
 }
+function renderFocus() {
+  const events = (REPORT.calendar_events || []).slice().sort((a, b) => a.sort_key.localeCompare(b.sort_key));
+  const majorNews = ((REPORT.intelligence || {}).major_news || {}).portfolio_news_summary || [];
+  const cards = [];
+  events.slice(0, 2).forEach(event => cards.push({
+    cls: "event", label: event.type === "earnings" ? "即将披露" : "宏观日程",
+    title: event.label, meta: `${event.date}${event.detail ? ` · ${event.detail}` : ""}`,
+    href: event.source_url, link: event.source_url ? "查看来源" : ""
+  }));
+  majorNews.filter(item => item.tier === "重大").slice(0, 2).forEach(item => cards.push({
+    cls: "news", label: `${item.ticker} · ${item.event_type || "关键事件"}`,
+    title: item.title_zh || item.title, meta: `${item.source || ""}${item.date ? ` · ${item.date}` : ""}`,
+    href: item.url, link: item.url ? "阅读原文" : ""
+  }));
+  if (!cards.length) cards.push({ cls: "", label: "暂无提醒", title: "近期没有已确认的关键事件", meta: "财报、宏观日程与重大新闻会自动显示在这里" });
+  document.getElementById("focus-grid").innerHTML = cards.map(card => `<article class="focus-card ${card.cls}"><div class="focus-label">${card.label}</div><div class="focus-title">${card.title}</div><div class="focus-meta">${card.meta}</div>${card.href ? `<a class="focus-link" href="${card.href}" target="_blank" rel="noopener noreferrer">${card.link}</a>` : ""}</article>`).join("");
+}
 function render() {
   document.getElementById("date").textContent = REPORT.date_label;
   document.getElementById("source").textContent = `生成时间：${REPORT.generated_at}`;
@@ -1474,6 +1530,7 @@ function render() {
   }
   document.getElementById("metrics").innerHTML = metricList.map(item => `<div class="metric"><div class="label">${item.label}</div><div class="value ${item.tone}">${item.value}</div><div class="hint">${item.hint}</div></div>`).join("");
   document.getElementById("position-count").textContent = `${p.position_count} 个标的`;
+  renderFocus();
   renderAttribution();
   renderPortfolioHistory();
   document.querySelectorAll("[data-history-range]").forEach(button => {
