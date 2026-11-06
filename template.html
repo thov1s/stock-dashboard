@@ -428,6 +428,7 @@ tr:last-child td { border-bottom: 0; }
 .cal-tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-right: 8px; font-weight: 700; }
 .cal-tag.earnings { background: #eef7f8; color: var(--teal); }
 .cal-tag.macro { background: #fff7ed; color: var(--warn); }
+.cal-tag.dividend { background: #f0edff; color: var(--purple); }
 .cal-status { display: inline-block; margin-left: 6px; color: var(--subtle); font-size: 11px; }
 .cal-detail { color: var(--muted); font-size: 12px; margin-top: 3px; }
 .cal-source { color: var(--blue); font-size: 12px; text-decoration: none; }
@@ -452,6 +453,7 @@ tr:last-child td { border-bottom: 0; }
 .cal-day-tag { font-size: 8px; padding: 1px 3px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
 .cal-day-tag.earnings { background: #eef7f8; color: var(--teal); }
 .cal-day-tag.macro { background: #fff7ed; color: var(--warn); }
+.cal-day-tag.dividend { background: #f0edff; color: var(--purple); }
 .cal-day-more { font-size: 8px; color: var(--subtle); }
 
 /* sparkline + 技术指标徽章 */
@@ -1450,7 +1452,7 @@ function renderCalendar() {
       const shown = dayEvents.slice(0, 2);
       const extra = dayEvents.length - shown.length;
       const tagsHtml = dayEvents.length ? `<div class="cal-day-tags">
-        ${shown.map(e => `<span class="cal-day-tag ${e.type}">${e.type === "earnings" ? e.label.replace(" 财报发布", "") : "宏观"}</span>`).join("")}
+        ${shown.map(e => `<span class="cal-day-tag ${e.type}">${e.type === "earnings" ? e.label.replace(" 财报发布", "") : e.type === "dividend" ? e.label.replace(/ (除息日|派息日)$/, "") : "宏观"}</span>`).join("")}
         ${extra > 0 ? `<span class="cal-day-more">+${extra}</span>` : ""}
       </div>` : "";
       cells.push(`<div class="cal-day ${key === todayKey ? "today" : ""} ${dayEvents.length ? "has-event" : ""}" ${dayEvents.length ? `data-cal-date="${key}"` : ""}>
@@ -1471,7 +1473,7 @@ function renderCalendar() {
     <div class="cal-item" data-date="${e.sort_key}">
       <div class="cal-date">${e.date}</div>
       <div>
-        <span class="cal-tag ${e.type}">${e.type === "earnings" ? "财报" : "宏观"}</span>${e.label}
+        <span class="cal-tag ${e.type}">${e.type === "earnings" ? "财报" : e.type === "dividend" ? "股息" : "宏观"}</span>${e.label}
         ${e.status ? `<span class="cal-status">${e.status}</span>` : ""}
         ${e.detail ? `<div class="cal-detail">${e.detail}</div>` : ""}
         ${e.source_url ? `<a class="cal-source" href="${e.source_url}" target="_blank" rel="noopener noreferrer">${e.source_name || "查看来源"}</a>` : ""}
